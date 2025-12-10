@@ -1,0 +1,209 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# poetry
+poetry.lock
+
+# pdm
+.pdm.toml
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Project-specific
+logs/
+*.xlsx
+!examples/*.xlsx
+!tests/fixtures/*.xlsx
+output/
+*.log
+
+# BMad Method structure (workflow and configuration files)
+.bmad/
+.bmad/**
+*.bmad
+
+# Claude AI structure
+.claude/
+.claude/**
+
+# Cursor AI structure
+.cursor/
+.cursor/**
+
+# Confidential and sensitive information
+# Real accounting data files (exclude sample files)
+账目分类明细.xlsx
+*账目*.xlsx
+*分类*.xlsx
+*明细*.xlsx
+*真实*.xlsx
+*actual*.xlsx
+*real*.xlsx
+*production*.xlsx
+*confidential*.xlsx
+*sensitive*.xlsx
+
+# Analysis scripts that may contain confidential data
+analyze_excel.py
+deep_analysis.py
+*_analysis.py
+*_analyze.py
+
+# MCP configuration (may contain API keys)
+.mcp.env
+.mcp.json
+.mcp.*.json
+
+# Environment files with secrets
+.env.local
+.env.production
+.env.*.local
+*.env
+!.mcp.env.example
+
+# Temporary analysis outputs
+*_analysis_output.*
+*_analysis_result.*
+analysis_output/
+deep_analysis_output/
+
+# Personal notes and scratch files
+scratch/
+notes/
+personal/
+*.scratch
+*.notes
