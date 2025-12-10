@@ -207,3 +207,11 @@ notes/
 personal/
 *.scratch
 *.notes
+
+# Internal development artifacts (outdated/development-only)
+EPIC_VALIDATION_REPORT.md
+docs/analysis/
+docs/product-brief-*.md
+docs/bmm-workflow-status.yaml
+docs/test-summary-*.md
+docs/research-technical-*.md

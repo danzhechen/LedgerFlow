@@ -1,4 +1,4 @@
-# veritas-accounting - Product Requirements Document
+# LedgerFlow - Product Requirements Document
 
 **Author:** dan  
 **Date:** 2025-01-27  
@@ -10,7 +10,7 @@
 
 **Vision Alignment**
 
-This product transforms Veritas's quarterly accounting process from a 5-10 hour manual task (dependent on a single expert) into a streamlined, accessible workflow that anyone can operate and maintain. The vision is to eliminate knowledge silos, reduce processing time by 80-90%, and ensure continuity of critical accounting operations through automation and clear documentation.
+This product transforms quarterly accounting processes from a 5-10 hour manual task (dependent on a single expert) into a streamlined, accessible workflow that anyone can operate and maintain. The vision is to eliminate knowledge silos, reduce processing time by 80-90%, and ensure continuity of critical accounting operations through automation and clear documentation.
 
 The system automates the complete workflow: processing 691+ journal entries, applying 194 mapping rules with conditional logic automatically, transforming journal → ledger with hierarchical structure, and generating quarterly aggregations—all while ensuring 100% accuracy through comprehensive validation and human oversight.
 
@@ -28,7 +28,7 @@ The compelling moment for users is when they run the automation and see their 5-
 **Domain:** Accounting / Financial Operations  
 **Complexity:** Medium
 
-This is an **internal business process automation tool** designed to automate Veritas's quarterly accounting workflow. It provides an Excel-native interface for processing journal entries through mapping rules to generate ledger reports. The domain is accounting/financial operations, requiring high accuracy and auditability.
+This is a **business process automation tool** designed to automate quarterly accounting workflows. It provides an Excel-native interface for processing journal entries through mapping rules to generate ledger reports. The domain is accounting/financial operations, requiring high accuracy and auditability.
 
 **Project Type Details:**
 - **Form Factor:** Python script/application with Excel I/O
@@ -411,10 +411,9 @@ Requirements must be decomposed into epics and bite-sized stories (200k context 
 
 ## References
 
-- Product Brief: `docs/product-brief-veritas-accounting-2025-12-07.md`
-- Technical Research: `docs/research-technical-2025-12-07.md`
-- Brainstorming Session: `docs/analysis/brainstorming-session-2025-12-07.md`
-- Example Data: `账目分类明细.xlsx`
+- Architecture: `docs/architecture.md`
+- Epics: `docs/epics.md`
+- Example Files: `examples/`
 
 ---
 
@@ -426,6 +425,6 @@ Requirements must be decomposed into epics and bite-sized stories (200k context 
 
 ---
 
-_This PRD captures the essence of veritas-accounting - Excel-native accounting automation with complete transparency and trust, reducing quarterly processing from 5-10 hours to < 1 hour while ensuring 100% accuracy and operational continuity._
+_This PRD captures the essence of LedgerFlow - Excel-native accounting automation with complete transparency and trust, reducing quarterly processing from 5-10 hours to < 1 hour while ensuring 100% accuracy and operational continuity._
 
 _Created through collaborative discovery between dan and AI facilitator._
