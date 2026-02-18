@@ -97,10 +97,12 @@ class TestRuleApplicator:
         result = applicator.apply_rules(entry)
 
         assert result.no_match is False
-        assert len(result.applied_rules) == 2
-        # Rules should be sorted by priority (higher priority value first, reverse=True)
-        # Priority 1 is higher than priority 2, so after reverse sort: priority 2 comes first
-        assert result.applied_rules[0].priority >= result.applied_rules[1].priority
+        # With generic rules (no CR/DR), only the first matching rule is applied (backward compatibility)
+        assert len(result.applied_rules) == 1
+        # Rules are sorted by priority in reverse (higher priority number first)
+        # So priority 2 (A1) comes before priority 1 (A2)
+        assert result.applied_rules[0].priority == 2
+        assert result.applied_rules[0].account_code == "A1"
 
     def test_one_to_many_mapping(self) -> None:
         """Test one-to-many mapping (one rule generates multiple entries)."""
@@ -274,3 +276,47 @@ class TestRuleApplicator:
         )
         result_q4 = applicator.apply_rules(entry_q4)
         assert result_q4.ledger_entries[0].quarter == 4
+
+    def test_deposit_refund_押金_flips_cr_dr(self) -> None:
+        """押金 (deposit refund): 账目分类明细 uses opposite sides; we flip CR/DR."""
+        cr_rule = MappingRule(
+            rule_id="R-押金-CR",
+            condition="old_type == '应付ol押金'",
+            old_type="应付ol押金",
+            account_code="2301",
+            priority=10,
+        )
+        cr_rule.ledger_type = "CR"
+        dr_rule = MappingRule(
+            rule_id="R-押金-DR",
+            condition="old_type == '应付ol押金'",
+            old_type="应付ol押金",
+            account_code="1100",
+            priority=10,
+        )
+        dr_rule.ledger_type = "DR"
+        applicator = RuleApplicator([cr_rule, dr_rule])
+        accounts = [
+            Account(code="1100", name="银行存款", level=1, full_path="资产 > 银行存款"),
+            Account(code="2010", name="应付款", level=1, parent_code=None, full_path="应付款"),
+            Account(code="2301", name="应付OL押金", level=2, parent_code="2010", full_path="应付款 > 应付OL押金"),
+        ]
+        hierarchy = AccountHierarchy(accounts)
+        entry = JournalEntry(
+            entry_id="JE-押金",
+            year=2024,
+            description="退还押金",
+            old_type="应付ol押金",
+            amount=Decimal("500"),
+            date=datetime(2024, 3, 1),
+        )
+        result = applicator.apply_rules(entry, hierarchy)
+        assert result.no_match is False
+        assert len(result.ledger_entries) == 2
+        by_account = {e.account_code: e.ledger_type for e in result.ledger_entries}
+        # 押金 flip: CR rule → DR entry, DR rule → CR entry
+        assert by_account["2301"] == "DR"
+        assert by_account["1100"] == "CR"
+
+
+

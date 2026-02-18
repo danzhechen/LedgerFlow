@@ -143,3 +143,11 @@ class TestEncodingUtilities:
         # Should be able to encode as UTF-8
         is_valid, _ = validate_utf8_text(account.name)
         assert is_valid is True
+
+
+
+
+
+
+
+

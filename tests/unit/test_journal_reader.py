@@ -578,3 +578,11 @@ class TestJournalEntryReader:
 
         with pytest.raises(ExcelIOError):
             reader.read_journal_entries(non_existent)
+
+
+
+
+
+
+
+

@@ -29,3 +29,11 @@ class ExcelIOError(VeritasAccountingError):
     """Raised when Excel I/O operations fail."""
 
     pass
+
+
+
+
+
+
+
+

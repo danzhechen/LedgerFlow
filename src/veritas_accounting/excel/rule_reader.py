@@ -137,8 +137,33 @@ class MappingRuleReader:
                         )
                     row_dict["generates_multiple"] = bool(generates_multiple)
 
+                # Extract ledger_type if present (for CR/DR tracking)
+                # Remove it from row_dict BEFORE creating MappingRule to avoid Pydantic errors
+                ledger_type = row_dict.pop("ledger_type", None) if "ledger_type" in row_dict else None
+                
+                # Also remove any other unexpected fields that might cause issues
+                # Keep only fields that MappingRule expects
+                expected_fields = {
+                    "rule_id", "condition", "account_code", "priority",
+                    "old_type", "new_type", "description", "generates_multiple"
+                }
+                # Explicitly filter to only expected fields
+                rule_dict = {}
+                for k, v in row_dict.items():
+                    if k in expected_fields:
+                        rule_dict[k] = v
+                
+                # Double-check: ledger_type should NOT be in rule_dict
+                if "ledger_type" in rule_dict:
+                    raise ValueError(f"ledger_type should not be in rule_dict! Keys: {list(rule_dict.keys())}")
+                
                 # Create MappingRule (Pydantic validates types and values)
-                rule = MappingRule(**row_dict)
+                rule = MappingRule(**rule_dict)
+                
+                # Attach ledger_type as attribute (not part of Pydantic model)
+                if ledger_type:
+                    rule.ledger_type = ledger_type
+                
                 rules.append(rule)
 
             except PydanticValidationError as e:
@@ -165,13 +190,23 @@ class MappingRuleReader:
 
             except Exception as e:
                 # Catch any other unexpected errors
+                # Check if this is actually a Pydantic error that wasn't caught
+                error_msg = str(e)
+                if "no field" in error_msg.lower() and "ledger_type" in error_msg:
+                    # This is a Pydantic error about ledger_type - it means the field is still in the dict
+                    # This shouldn't happen if filtering worked, so log the actual dict keys
+                    error_dict = rule_dict if 'rule_dict' in locals() else row_dict
+                    error_msg = f"Pydantic error: {error_msg}. Dict keys were: {list(error_dict.keys())}"
+                
+                # Use rule_dict if available, otherwise use row dict (but filter out ledger_type)
+                error_dict = rule_dict if 'rule_dict' in locals() else {k: v for k, v in row_dict.items() if k != 'ledger_type'}
                 row_errors.append(
                     ValidationError(
                         row_number=row_number,
                         field_name="general",
                         error_type="unexpected_error",
-                        error_message=f"Unexpected error: {str(e)}",
-                        actual_value=str(row.to_dict()),
+                        error_message=error_msg,
+                        actual_value=str(error_dict),
                     )
                 )
 
@@ -215,3 +250,121 @@ class MappingRuleReader:
             Tuple of (rules, errors)
         """
         return self._parse_rules(df)
+
+    def read_rules_from_journal_to_ledger(
+        self, file_path: str | Path
+    ) -> tuple[list[MappingRule], list["ValidationError"]]:
+        """
+        Read mapping rules from 账目分类明细.xlsx sheet "journal_to_ledger".
+
+        OLD section: year, type, cr_ledger, dr_ledger.
+        NEW section: type.1, cr_ledger.1, dr_ledger.1.
+        When multiple rows exist for (year, type), use 摘要 (description): column Unnamed: 12
+        is used as a keyword; rules with a keyword get higher priority and condition
+        includes ` and "keyword" in description`.
+
+        Returns:
+            Tuple of (rules, errors). Rules are suitable for RuleApplicator (CR/DR pairs).
+        """
+        from veritas_accounting.validation.input_validator import ValidationError
+
+        file_path = Path(file_path)
+        errors: list["ValidationError"] = []
+        rules: list[MappingRule] = []
+
+        try:
+            df = pd.read_excel(file_path, sheet_name="journal_to_ledger", header=1)
+        except Exception as e:
+            raise ExcelIOError(
+                f"Failed to read journal_to_ledger from {file_path}. Error: {e}"
+            ) from e
+
+        required = {"year", "type", "type.1", "cr_ledger.1", "dr_ledger.1"}
+        if not required.issubset(df.columns):
+            missing = required - set(df.columns)
+            errors.append(
+                ValidationError(
+                    row_number=0,
+                    field_name=",".join(missing),
+                    error_type="missing_column",
+                    error_message=f"journal_to_ledger missing columns: {missing}",
+                    actual_value=None,
+                )
+            )
+            return rules, errors
+
+        desc_keyword_col = "Unnamed: 12" if "Unnamed: 12" in df.columns else None
+        base_priority = 10
+        keyword_priority = 20
+        seen_default: set[tuple[int, str]] = set()
+
+        for idx, row in df.iterrows():
+            try:
+                year_val = row.get("year")
+                old_type = row.get("type")
+                new_type = row.get("type.1")
+                cr_ledger = row.get("cr_ledger.1")
+                dr_ledger = row.get("dr_ledger.1")
+                if pd.isna(year_val) or pd.isna(old_type) or pd.isna(cr_ledger) or pd.isna(dr_ledger):
+                    continue
+                if str(new_type).strip() == "/" or (pd.isna(new_type) and str(cr_ledger).strip() == "/"):
+                    continue
+                year_int = int(float(year_val))
+                old_str = str(old_type).strip()
+                cr_str = str(cr_ledger).strip()
+                dr_str = str(dr_ledger).strip()
+                if not cr_str or not dr_str:
+                    continue
+
+                keyword = None
+                if desc_keyword_col and desc_keyword_col in row.index:
+                    v = row.get(desc_keyword_col)
+                    if v is not None and not pd.isna(v) and str(v).strip():
+                        keyword = str(v).strip()
+
+                if not keyword:
+                    key = (year_int, old_str)
+                    if key in seen_default:
+                        continue
+                    seen_default.add(key)
+
+                condition = f'old_type == "{old_str}" and year == {year_int}'
+                if keyword:
+                    condition += f' and "{keyword}" in description'
+                priority = keyword_priority if keyword else base_priority
+
+                rule_id_base = f"JTL-{idx+2}"
+                cr_rule = MappingRule(
+                    rule_id=f"{rule_id_base}-CR",
+                    condition=condition,
+                    account_code=cr_str,
+                    priority=priority,
+                    old_type=old_str,
+                    new_type=str(new_type).strip() if pd.notna(new_type) else None,
+                    description=f"From journal_to_ledger: {old_str} -> CR {cr_str}",
+                )
+                cr_rule.ledger_type = "CR"
+                dr_rule = MappingRule(
+                    rule_id=f"{rule_id_base}-DR",
+                    condition=condition,
+                    account_code=dr_str,
+                    priority=priority,
+                    old_type=old_str,
+                    new_type=str(new_type).strip() if pd.notna(new_type) else None,
+                    description=f"From journal_to_ledger: {old_str} -> DR {dr_str}",
+                )
+                dr_rule.ledger_type = "DR"
+                rules.append(cr_rule)
+                rules.append(dr_rule)
+            except Exception as e:
+                errors.append(
+                    ValidationError(
+                        row_number=idx + 2,
+                        field_name="journal_to_ledger",
+                        error_type="parse_error",
+                        error_message=str(e),
+                        actual_value=str(row.to_dict()),
+                    )
+                )
+
+        return rules, errors

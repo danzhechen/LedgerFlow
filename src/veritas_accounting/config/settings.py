@@ -129,6 +129,10 @@ class AppConfig(BaseModel):
     output: OutputConfig = Field(default_factory=OutputConfig)
     validation: ValidationConfig = Field(default_factory=ValidationConfig)
     processing: ProcessingConfig = Field(default_factory=ProcessingConfig)
+    sheet_name: Optional[str] = Field(
+        None,
+        description="Specific sheet name to read from Excel file (for multi-sheet processing)",
+    )
 
     @classmethod
     def from_yaml(cls, config_path: Path | str) -> "AppConfig":
@@ -291,3 +295,11 @@ class AppConfig(BaseModel):
                 errors.append(f"Cannot create output directory: {e}")
 
         return len(errors) == 0, errors
+
+
+
+
+
+
+
+

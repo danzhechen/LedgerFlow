@@ -122,3 +122,11 @@ def safe_decode(
         Decoded text
     """
     return data.decode(encoding, errors=errors)
+
+
+
+
+
+
+
+

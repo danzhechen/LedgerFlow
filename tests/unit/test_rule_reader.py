@@ -303,3 +303,11 @@ class TestMappingRuleReader:
         assert len(rules) == 1
         assert len(errors) == 0
         assert rules[0].generates_multiple is True
+
+
+
+
+
+
+
+

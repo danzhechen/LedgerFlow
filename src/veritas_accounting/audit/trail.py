@@ -298,3 +298,11 @@ class AuditTrail:
         self.records.clear()
         self._start_time = None
         self._end_time = None
+
+
+
+
+
+
+
+

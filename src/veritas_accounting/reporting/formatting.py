@@ -262,3 +262,11 @@ class ExcelFormatter:
             freeze_cell: Cell reference to freeze at (default: "A2")
         """
         ws.freeze_panes = freeze_cell
+
+
+
+
+
+
+
+

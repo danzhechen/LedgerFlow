@@ -99,10 +99,11 @@ Or use a default location (if supported):
 - Description: Name of quarterly report Excel file
 - Default: `"quarterly_report.xlsx"`
 
-**`output.error_report_file`** (optional)
+**`output.error_report_file`** (deprecated, not used)
 - Type: String (filename)
-- Description: Name of error report Excel file
+- Description: ~~Name of error report Excel file~~ (No longer generated - replaced by `review_preview.xlsx`)
 - Default: `"error_report.xlsx"`
+- **Note:** This setting is kept for backward compatibility but is no longer used. Error reporting is now handled by the `review_preview.xlsx` file.
 
 **`output.audit_trail_file`** (optional)
 - Type: String (filename)
@@ -356,3 +357,11 @@ If configuration is invalid, you'll see clear error messages:
 - See [User Manual](./user-manual.md) for complete feature reference
 - Check [Error Handling Guide](./error-handling.md) for troubleshooting
 - Review [Rule Management Guide](./rule-management.md) for rule configuration
+
+
+
+
+
+
+
+

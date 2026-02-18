@@ -163,3 +163,11 @@ class TestCLIErrorFormatter:
         hint = formatter._get_quick_fix_hint(sample_error)
         # Hint may or may not be present depending on error message
         assert hint is None or isinstance(hint, str)
+
+
+
+
+
+
+
+

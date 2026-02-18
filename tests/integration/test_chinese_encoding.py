@@ -227,3 +227,11 @@ class TestChineseTextEncoding:
         assert "数据条目" in read_df["名称"].values
         assert "这是一个测试" in read_df["描述"].values
         assert "这是另一个测试" in read_df["描述"].values
+
+
+
+
+
+
+
+

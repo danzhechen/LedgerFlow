@@ -76,20 +76,41 @@ class LedgerOutputGenerator:
                 f"Failed to generate ledger output: {output_path}. Error: {e}"
             ) from e
 
+    def add_ledger_entries_sheet(
+        self,
+        wb: Workbook,
+        ledger_entries: list[LedgerEntry],
+        index: int = 0,
+    ) -> None:
+        """
+        Add only the Ledger Entries sheet to an existing workbook.
+        Used when building a unified report in a single file.
+        """
+        ws = wb.create_sheet("Ledger Entries", index)
+        self._fill_ledger_entries_sheet(ws, ledger_entries)
+
     def _create_ledger_entries_sheet(
         self, wb: Workbook, ledger_entries: list[LedgerEntry]
     ) -> None:
         """Create ledger entries sheet with hierarchical organization."""
         ws = wb.create_sheet("Ledger Entries", 0)
+        self._fill_ledger_entries_sheet(ws, ledger_entries)
 
-        # Headers
+    def _fill_ledger_entries_sheet(
+        self, ws: Any, ledger_entries: list[LedgerEntry]
+    ) -> None:
+        """Fill a worksheet with ledger entries (headers + data)."""
+
+        # Headers (Signed Amount: DR positive, CR negative so each pair sums to zero)
         headers = [
             "Entry ID",
-            "Account Code",
+            "Ledger ID",  # 4-digit number from ledger_new section (e.g., 1100, 2209)
+            "Account Code",  # Account code from mapping rules
             "Account Path",
             "Level",
+            "Ledger Type",  # CR or DR
             "Description",
-            "Amount",
+            "Signed Amount",  # DR = +, CR = − (double-entry: one positive, one negative per transaction)
             "Date",
             "Quarter",
             "Year",
@@ -126,18 +147,35 @@ class LedgerOutputGenerator:
         row = 2
         for entry in organized_entries:
             level = self._get_account_level(entry.account_code)
+            
+            # Get ledger ID from hierarchy (4-digit number from ledger_new section)
+            # If hierarchy is available, use account.code (which is the ledger ID)
+            # Try lookup by code first, then by name (in case mapping rules use names)
+            # Otherwise fall back to entry.account_code
+            ledger_id = entry.account_code
+            if self.account_hierarchy:
+                account = self.account_hierarchy.get_account(entry.account_code)
+                # If not found by code, try looking up by name (mapping rules might use names)
+                if not account:
+                    account = self.account_hierarchy.get_account_by_name(entry.account_code)
+                if account:
+                    ledger_id = account.code  # This is the 4-digit ledger ID from ledger_new
 
             ws.cell(row=row, column=1, value=entry.entry_id)
-            ws.cell(row=row, column=2, value=entry.account_code)
-            ws.cell(row=row, column=3, value=entry.account_path)
-            ws.cell(row=row, column=4, value=level)
-            ws.cell(row=row, column=5, value=entry.description)
-            ws.cell(row=row, column=6, value=float(entry.amount))
-            ws.cell(row=row, column=7, value=entry.date.isoformat())
-            ws.cell(row=row, column=8, value=entry.quarter)
-            ws.cell(row=row, column=9, value=entry.year)
-            ws.cell(row=row, column=10, value=entry.source_entry_id)
-            ws.cell(row=row, column=11, value=entry.rule_applied)
+            ws.cell(row=row, column=2, value=ledger_id)  # Ledger ID (4-digit number from ledger_new)
+            ws.cell(row=row, column=3, value=entry.account_code)  # Account Code
+            ws.cell(row=row, column=4, value=entry.account_path)
+            ws.cell(row=row, column=5, value=level)
+            ws.cell(row=row, column=6, value=entry.ledger_type or "")  # CR, DR, or empty
+            ws.cell(row=row, column=7, value=entry.description)
+            # Double-entry display: DR positive, CR negative (e.g. 工资 expense +, 余利宝 income −)
+            signed = float(entry.amount) if (entry.ledger_type or "").upper() == "DR" else -float(entry.amount)
+            ws.cell(row=row, column=8, value=signed)
+            ws.cell(row=row, column=9, value=entry.date.isoformat())
+            ws.cell(row=row, column=10, value=entry.quarter)
+            ws.cell(row=row, column=11, value=entry.year)
+            ws.cell(row=row, column=12, value=entry.source_entry_id)
+            ws.cell(row=row, column=13, value=entry.rule_applied)
 
             # Apply level-based formatting
             level_color = self._get_level_color(level)
@@ -150,12 +188,12 @@ class LedgerOutputGenerator:
                         fill_type="solid",
                     )
 
-            # Format amount column
-            amount_cell = ws.cell(row=row, column=6)
-            amount_cell.number_format = "#,##0.00"
+            # Format signed amount (allow minus for CR)
+            amount_cell = ws.cell(row=row, column=8)
+            amount_cell.number_format = "#,##0.00;-#,##0.00"
 
             # Format date column
-            date_cell = ws.cell(row=row, column=7)
+            date_cell = ws.cell(row=row, column=9)
             date_cell.number_format = "YYYY-MM-DD"
 
             row += 1
@@ -163,16 +201,18 @@ class LedgerOutputGenerator:
         # Auto-adjust column widths
         column_widths = {
             "A": 15,  # Entry ID
-            "B": 15,  # Account Code
-            "C": 40,  # Account Path
-            "D": 8,   # Level
-            "E": 30,  # Description
-            "F": 15,  # Amount
-            "G": 12,  # Date
-            "H": 8,   # Quarter
-            "I": 8,   # Year
-            "J": 15,  # Source Entry ID
-            "K": 15,  # Rule Applied
+            "B": 15,  # Ledger ID
+            "C": 15,  # Account Code
+            "D": 40,  # Account Path
+            "E": 8,   # Level
+            "F": 12,  # Ledger Type (CR/DR)
+            "G": 30,  # Description
+            "H": 16,  # Signed Amount
+            "I": 12,  # Date
+            "J": 8,   # Quarter
+            "K": 8,   # Year
+            "L": 15,  # Source Entry ID
+            "M": 15,  # Rule Applied
         }
         for col_letter, width in column_widths.items():
             ws.column_dimensions[col_letter].width = width
@@ -355,13 +395,16 @@ class LedgerOutputGenerator:
         Get account level from hierarchy.
 
         Args:
-            account_code: Account code
+            account_code: Account code or name
 
         Returns:
             Account level (1-4) or 0 if not found
         """
         if self.account_hierarchy:
             account = self.account_hierarchy.get_account(account_code)
+            # If not found by code, try looking up by name (mapping rules might use names)
+            if not account:
+                account = self.account_hierarchy.get_account_by_name(account_code)
             if account:
                 return account.level
         return 0
@@ -383,3 +426,11 @@ class LedgerOutputGenerator:
             4: self.COLOR_LEVEL4,
         }
         return colors.get(level)
+
+
+
+
+
+
+
+

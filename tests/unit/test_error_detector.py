@@ -497,3 +497,11 @@ class TestErrorDetector:
         assert len(all_errors) == 1
         assert all_errors[0].rule_id == "R-001"
         assert all_errors[0].entry_id is None  # Should not be set for rules
+
+
+
+
+
+
+
+

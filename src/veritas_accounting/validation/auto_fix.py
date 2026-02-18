@@ -334,3 +334,11 @@ class AutoFixSuggester:
             return max(len(s1), len(s2))
 
         return sum(c1 != c2 for c1, c2 in zip(s1, s2))
+
+
+
+
+
+
+
+

@@ -132,3 +132,11 @@ class RuleEvaluator:
                 errors[rule.rule_id] = str(e)
 
         return errors
+
+
+
+
+
+
+
+

@@ -232,3 +232,11 @@ class ValidationResultsViewer:
             lines.append(f"  • {stage.title()}: {status}")
 
         return "\n".join(lines)
+
+
+
+
+
+
+
+

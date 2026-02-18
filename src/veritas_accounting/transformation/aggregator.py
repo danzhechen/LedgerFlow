@@ -23,6 +23,8 @@ class QuarterlyAggregation:
     quarter: int
     year: int
     total_amount: Decimal
+    cr_amount: Decimal  # Credit amount
+    dr_amount: Decimal  # Debit amount
     entry_count: int
     level: int
 
@@ -79,6 +81,7 @@ class QuarterlyAggregator:
         df = self._ledger_entries_to_dataframe(ledger_entries)
 
         # Group by account_code, quarter, and year
+        # Calculate CR and DR amounts separately
         grouped = df.groupby(["account_code", "quarter", "year"]).agg(
             {
                 "amount": ["sum", "count"],
@@ -89,9 +92,55 @@ class QuarterlyAggregator:
         grouped.columns = ["total_amount", "entry_count"]
         grouped = grouped.reset_index()
 
+        # Calculate CR and DR amounts separately
+        cr_grouped = df[df["ledger_type"] == "CR"].groupby(["account_code", "quarter", "year"]).agg(
+            {"amount": "sum"}
+        ).reset_index()
+        cr_grouped.columns = ["account_code", "quarter", "year", "cr_amount"]
+        
+        dr_grouped = df[df["ledger_type"] == "DR"].groupby(["account_code", "quarter", "year"]).agg(
+            {"amount": "sum"}
+        ).reset_index()
+        dr_grouped.columns = ["account_code", "quarter", "year", "dr_amount"]
+
+        # Merge CR and DR amounts
+        merged = grouped.merge(
+            cr_grouped,
+            on=["account_code", "quarter", "year"],
+            how="left"
+        ).merge(
+            dr_grouped,
+            on=["account_code", "quarter", "year"],
+            how="left"
+        )
+        
+        # Fill NaN with 0 for CR/DR amounts
+        merged["cr_amount"] = merged["cr_amount"].fillna(0)
+        merged["dr_amount"] = merged["dr_amount"].fillna(0)
+
+        # IMPORTANT: compute signed net amount instead of raw sum
+        #
+        # Our ledger entries store amounts as positive numbers with a separate
+        # `ledger_type` field indicating CR or DR. For correct accounting-style
+        # "net" values we:
+        #   - treat CR as +amount
+        #   - treat DR as -amount
+        # so that:
+        #   net_amount = CR_amount - DR_amount
+        #
+        # This makes:
+        #   - pure income accounts (only CR) → positive net
+        #   - pure expense accounts (only DR) → negative net
+        #   - accounts with equal CR/DR over the period → net = 0
+        #
+        # Previously `total_amount` was just the sum of absolute amounts
+        # (CR + DR), which doubled the effective magnitude and made balances
+        # look "wrong" compared to accounting expectations.
+        merged["total_amount"] = merged["cr_amount"] - merged["dr_amount"]
+
         # Get account paths and levels from hierarchy
         aggregations: list[QuarterlyAggregation] = []
-        for _, row in grouped.iterrows():
+        for _, row in merged.iterrows():
             account_code = row["account_code"]
             account_path = self._get_account_path(account_code)
             level = self._get_account_level(account_code)
@@ -102,6 +151,8 @@ class QuarterlyAggregator:
                 quarter=int(row["quarter"]),
                 year=int(row["year"]),
                 total_amount=Decimal(str(row["total_amount"])),
+                cr_amount=Decimal(str(row["cr_amount"])),
+                dr_amount=Decimal(str(row["dr_amount"])),
                 entry_count=int(row["entry_count"]),
                 level=level,
             )
@@ -177,7 +228,7 @@ class QuarterlyAggregator:
 
         Returns:
             DataFrame with columns: account_code, account_path, quarter, year,
-            total_amount, entry_count, level
+            total_amount, cr_amount, dr_amount, entry_count, level
         """
         aggregations = self.aggregate(ledger_entries)
 
@@ -188,6 +239,8 @@ class QuarterlyAggregator:
                 "quarter": agg.quarter,
                 "year": agg.year,
                 "total_amount": float(agg.total_amount),
+                "cr_amount": float(agg.cr_amount),
+                "dr_amount": float(agg.dr_amount),
                 "entry_count": agg.entry_count,
                 "level": agg.level,
             }
@@ -214,6 +267,7 @@ class QuarterlyAggregator:
                 "quarter": entry.quarter,
                 "year": entry.year,
                 "amount": float(entry.amount),
+                "ledger_type": entry.ledger_type or "",
             }
             for entry in ledger_entries
         ]
@@ -311,3 +365,9 @@ class QuarterlyAggregator:
                         )
 
         return len(errors) == 0, errors
+
+
+
+
+
+

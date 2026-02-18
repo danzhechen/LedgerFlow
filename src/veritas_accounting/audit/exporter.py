@@ -392,3 +392,11 @@ class AuditTrailExporter:
 
         # Enable filters
         ws.auto_filter.ref = ws.dimensions
+
+
+
+
+
+
+
+

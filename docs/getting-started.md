@@ -227,3 +227,11 @@ veritas-accounting process --input journal.xlsx --verbose
 ---
 
 **Ready to dive deeper?** Continue to the [User Manual](./user-manual.md) for complete feature documentation.
+
+
+
+
+
+
+
+

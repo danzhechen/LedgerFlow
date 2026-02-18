@@ -132,12 +132,15 @@ def process(
             click.echo("\n📊 Processing Summary:")
             click.echo(f"   • Journal entries processed: {stats['journal_entries']}")
             click.echo(f"   • Ledger entries generated: {stats['ledger_entries']}")
-            click.echo(f"   • Rules applied: {stats['rules_applied']}")
-            if stats["unmatched_entries"] > 0:
+            
+            if "rules_applied" in stats:
+                click.echo(f"   • Rules applied: {stats['rules_applied']}")
+            
+            if stats.get("unmatched_entries", 0) > 0:
                 click.echo(f"   • Unmatched entries: {stats['unmatched_entries']}")
-            if stats["validation_errors"] > 0:
+            if stats.get("validation_errors", 0) > 0:
                 click.echo(f"   • Validation errors: {stats['validation_errors']}")
-            if stats["validation_warnings"] > 0:
+            if stats.get("validation_warnings", 0) > 0:
                 click.echo(f"   • Validation warnings: {stats['validation_warnings']}")
 
         sys.exit(0)

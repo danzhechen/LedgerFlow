@@ -205,3 +205,11 @@ class TestAutoFixSuggester:
         assert suggestion.after_value == "OL"
         assert suggestion.fix_reason is not None
         assert "Case mismatch" in suggestion.fix_reason or "case" in suggestion.fix_reason.lower()
+
+
+
+
+
+
+
+

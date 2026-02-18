@@ -1,6 +1,6 @@
 """MappingRule Pydantic model for veritas-accounting."""
 
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -91,5 +91,19 @@ class MappingRule(BaseModel):
     class Config:
         """Pydantic configuration."""
 
-        extra = "ignore"
+        extra = "ignore"  # Ignore extra fields during validation
         use_enum_values = True
+    
+    def __setattr__(self, name: str, value: Any) -> None:
+        """Allow setting dynamic attributes like ledger_type."""
+        # Allow setting attributes that aren't in the model
+        # This is needed for ledger_type which is added dynamically
+        object.__setattr__(self, name, value)
+
+
+
+
+
+
+
+

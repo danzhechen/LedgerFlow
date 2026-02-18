@@ -27,3 +27,12 @@ pytest tests/ -v --tb=short --cov=src/veritas_accounting --cov-report=term-missi
 
 echo ""
 echo "✅ All tests completed!"
+
+
+
+
+
+
+
+
+

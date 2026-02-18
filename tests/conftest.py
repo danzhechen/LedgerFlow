@@ -20,3 +20,11 @@ def fixtures_dir(project_root: Path) -> Path:
 def examples_dir(project_root: Path) -> Path:
     """Return the path to the examples directory."""
     return project_root / "examples"
+
+
+
+
+
+
+
+

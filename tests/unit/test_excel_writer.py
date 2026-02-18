@@ -177,3 +177,11 @@ class TestExcelWriter:
         # but we can verify the file is valid
         read_df = pd.read_excel(output_file, engine="openpyxl")
         assert not read_df.empty
+
+
+
+
+
+
+
+
