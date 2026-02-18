@@ -303,3 +303,11 @@ class TestExcelReader:
         finally:
             if tmp_path.exists():
                 tmp_path.unlink()
+
+
+
+
+
+
+
+

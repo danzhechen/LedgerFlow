@@ -97,9 +97,11 @@ class TestJournalToLedgerTransformer:
 
         ledger_entries, unmatched = transformer.transform([entry])
 
-        assert len(ledger_entries) == 2
+        # With generic rules (no CR/DR), only the first matching rule is applied (backward compatibility)
+        # Rules are sorted by priority in reverse (higher priority number first)
+        assert len(ledger_entries) == 1
         assert len(unmatched) == 0
-        assert {le.account_code for le in ledger_entries} == {"A1", "A2"}
+        assert ledger_entries[0].account_code == "A2"  # First rule in sorted order
 
     def test_with_account_hierarchy(self) -> None:
         """Test transformation with account hierarchy."""
@@ -220,6 +222,7 @@ class TestQuarterlyAggregator:
                 rule_applied="R-001",
                 quarter=1,
                 year=2024,
+                ledger_type="CR",  # Credit entry
             ),
             LedgerEntry(
                 entry_id="LE-002",
@@ -232,6 +235,7 @@ class TestQuarterlyAggregator:
                 rule_applied="R-001",
                 quarter=1,
                 year=2024,
+                ledger_type="CR",  # Credit entry
             ),
         ]
 
@@ -241,7 +245,10 @@ class TestQuarterlyAggregator:
         assert aggregations[0].account_code == "A1"
         assert aggregations[0].quarter == 1
         assert aggregations[0].year == 2024
+        # Net amount = CR - DR = 3000 - 0 = 3000
         assert aggregations[0].total_amount == Decimal("3000")
+        assert aggregations[0].cr_amount == Decimal("3000")
+        assert aggregations[0].dr_amount == Decimal("0")
         assert aggregations[0].entry_count == 2
 
     def test_multiple_accounts_aggregation(self) -> None:
@@ -260,6 +267,7 @@ class TestQuarterlyAggregator:
                 rule_applied="R-001",
                 quarter=1,
                 year=2024,
+                ledger_type="CR",
             ),
             LedgerEntry(
                 entry_id="LE-002",
@@ -272,6 +280,7 @@ class TestQuarterlyAggregator:
                 rule_applied="R-002",
                 quarter=1,
                 year=2024,
+                ledger_type="DR",
             ),
         ]
 
@@ -280,6 +289,18 @@ class TestQuarterlyAggregator:
         assert len(aggregations) == 2
         account_codes = {agg.account_code for agg in aggregations}
         assert account_codes == {"A1", "A2"}
+        
+        # Check A1 (CR only)
+        a1_agg = next(agg for agg in aggregations if agg.account_code == "A1")
+        assert a1_agg.cr_amount == Decimal("1000")
+        assert a1_agg.dr_amount == Decimal("0")
+        assert a1_agg.total_amount == Decimal("1000")
+        
+        # Check A2 (DR only)
+        a2_agg = next(agg for agg in aggregations if agg.account_code == "A2")
+        assert a2_agg.cr_amount == Decimal("0")
+        assert a2_agg.dr_amount == Decimal("2000")
+        assert a2_agg.total_amount == Decimal("-2000")
 
     def test_multiple_quarters_aggregation(self) -> None:
         """Test aggregation with multiple quarters."""
@@ -297,6 +318,7 @@ class TestQuarterlyAggregator:
                 rule_applied="R-001",
                 quarter=1,
                 year=2024,
+                ledger_type="CR",
             ),
             LedgerEntry(
                 entry_id="LE-002",
@@ -309,6 +331,7 @@ class TestQuarterlyAggregator:
                 rule_applied="R-001",
                 quarter=2,
                 year=2024,
+                ledger_type="CR",
             ),
         ]
 
@@ -341,6 +364,7 @@ class TestQuarterlyAggregator:
                 rule_applied="R-001",
                 quarter=1,
                 year=2024,
+                ledger_type="CR",
             ),
         ]
 
@@ -366,6 +390,7 @@ class TestQuarterlyAggregator:
                 rule_applied="R-001",
                 quarter=1,
                 year=2024,
+                ledger_type="CR",
             ),
         ]
 
@@ -376,3 +401,11 @@ class TestQuarterlyAggregator:
         assert "quarter" in df.columns
         assert "year" in df.columns
         assert "total_amount" in df.columns
+        assert "cr_amount" in df.columns
+        assert "dr_amount" in df.columns
+
+
+
+
+
+

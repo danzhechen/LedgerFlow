@@ -206,3 +206,11 @@ class TestValidationResultsViewer:
 
         assert summary.entries_processed == 0
         assert summary.overall_confidence.level == CONFIDENCE_LOW
+
+
+
+
+
+
+
+

@@ -45,6 +45,35 @@ def sample_account_hierarchy():
 
 
 @pytest.fixture
+def ledger_new_style_hierarchy():
+    """Create account hierarchy in ledger_new style (4-digit ledger IDs)."""
+    accounts = [
+        Account(
+            code="1100",  # 4-digit ledger ID
+            name="银行存款",  # Account name (used in mapping rules)
+            level=1,
+            parent_code=None,
+            full_path="资产 > 银行存款",
+        ),
+        Account(
+            code="4301",  # 4-digit ledger ID
+            name="收入OL",  # Account name (used in mapping rules)
+            level=1,
+            parent_code=None,
+            full_path="收入 > 收入OL",
+        ),
+        Account(
+            code="5301",  # 4-digit ledger ID
+            name="支出OL讲师",  # Account name (used in mapping rules)
+            level=1,
+            parent_code=None,
+            full_path="支出 > 支出OL讲师",
+        ),
+    ]
+    return AccountHierarchy(accounts)
+
+
+@pytest.fixture
 def sample_ledger_entries():
     """Create sample ledger entries for testing."""
     return [
@@ -148,6 +177,76 @@ class TestLedgerOutputGenerator:
         assert level_totals[2]["A1-1"]["amount"] == 500.0
         assert level_totals[3]["A1-1-1"]["amount"] == 250.0
 
+    def test_ledger_id_in_output_by_code(self, ledger_new_style_hierarchy, tmp_path):
+        """Test that ledger ID (4-digit number) is included in output when account_code matches."""
+        generator = LedgerOutputGenerator(ledger_new_style_hierarchy)
+        
+        # Create ledger entry with account_code matching hierarchy code
+        ledger_entries = [
+            LedgerEntry(
+                entry_id="LE-001",
+                account_code="1100",  # Matches hierarchy code
+                account_path="资产 > 银行存款",
+                amount=Decimal("1000.00"),
+                date=datetime(2024, 1, 15),
+                description="Test entry",
+                source_entry_id="JE-001",
+                rule_applied="R-001",
+                quarter=1,
+                year=2024,
+                ledger_type="CR",
+            ),
+        ]
+        
+        output_path = tmp_path / "test_ledger_id.xlsx"
+        generator.generate(ledger_entries, output_path)
+        
+        # Read back and verify ledger ID is in output
+        from openpyxl import load_workbook
+        wb = load_workbook(output_path)
+        ws = wb["Ledger Entries"]
+        
+        # Check header row
+        assert ws.cell(row=1, column=2).value == "Ledger ID"
+        # Check data row - ledger ID should be "1100" (4-digit number)
+        assert ws.cell(row=2, column=2).value == "1100"
+        # Account Code should also be "1100" in this case
+        assert ws.cell(row=2, column=3).value == "1100"
+
+    def test_ledger_id_in_output_by_name(self, ledger_new_style_hierarchy, tmp_path):
+        """Test that ledger ID is found by account name when mapping rules use names."""
+        generator = LedgerOutputGenerator(ledger_new_style_hierarchy)
+        
+        # Create ledger entry with account_code matching hierarchy name (as mapping rules do)
+        ledger_entries = [
+            LedgerEntry(
+                entry_id="LE-001",
+                account_code="银行存款",  # Account name (as used in mapping rules)
+                account_path="资产 > 银行存款",
+                amount=Decimal("1000.00"),
+                date=datetime(2024, 1, 15),
+                description="Test entry",
+                source_entry_id="JE-001",
+                rule_applied="R-001",
+                quarter=1,
+                year=2024,
+                ledger_type="CR",
+            ),
+        ]
+        
+        output_path = tmp_path / "test_ledger_id_by_name.xlsx"
+        generator.generate(ledger_entries, output_path)
+        
+        # Read back and verify ledger ID is found by name lookup
+        from openpyxl import load_workbook
+        wb = load_workbook(output_path)
+        ws = wb["Ledger Entries"]
+        
+        # Check data row - ledger ID should be "1100" (found by name lookup)
+        assert ws.cell(row=2, column=2).value == "1100"
+        # Account Code should be "银行存款" (original from mapping rules)
+        assert ws.cell(row=2, column=3).value == "银行存款"
+
     def test_get_account_level(
         self, sample_account_hierarchy
     ):
@@ -184,6 +283,41 @@ class TestQuarterlyReportGenerator:
 
             assert output_path.exists()
             assert output_path.suffix == ".xlsx"
+
+    def test_ledger_id_in_quarterly_report(self, ledger_new_style_hierarchy, tmp_path):
+        """Test that ledger ID is included in quarterly report output."""
+        generator = QuarterlyReportGenerator(ledger_new_style_hierarchy)
+        
+        ledger_entries = [
+            LedgerEntry(
+                entry_id="LE-001",
+                account_code="收入OL",  # Account name (as used in mapping rules)
+                account_path="收入 > 收入OL",
+                amount=Decimal("5000.00"),
+                date=datetime(2024, 1, 15),
+                description="Test entry",
+                source_entry_id="JE-001",
+                rule_applied="R-001",
+                quarter=1,
+                year=2024,
+                ledger_type="CR",
+            ),
+        ]
+        
+        output_path = tmp_path / "test_quarterly_ledger_id.xlsx"
+        generator.generate(ledger_entries, output_path)
+        
+        # Read back and verify ledger ID is in quarterly report
+        from openpyxl import load_workbook
+        wb = load_workbook(output_path)
+        ws = wb["Quarterly Totals"]
+        
+        # Check header row
+        assert ws.cell(row=3, column=1).value == "Ledger ID"
+        # Check data row - ledger ID should be "4301" (found by name lookup)
+        assert ws.cell(row=5, column=1).value == "4301"
+        # Account Code should be "收入OL" (original from mapping rules)
+        assert ws.cell(row=5, column=2).value == "收入OL"
 
     def test_generate_report_without_charts(
         self, sample_ledger_entries, sample_account_hierarchy
@@ -349,3 +483,11 @@ class TestExcelFormatter:
 
         ExcelFormatter.freeze_panes(ws, "A2")
         assert ws.freeze_panes == "A2"
+
+
+
+
+
+
+
+

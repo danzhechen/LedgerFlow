@@ -250,3 +250,11 @@ class ExcelReader:
                 f"Error reading Excel file: {file_path}. "
                 f"Original error: {str(e)}"
             )
+
+
+
+
+
+
+
+

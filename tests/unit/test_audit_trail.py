@@ -292,3 +292,11 @@ class TestTransformationRecord:
         assert "applied_rules" in data
         assert "generated_entries" in data
         assert data["no_match"] is False
+
+
+
+
+
+
+
+

@@ -279,3 +279,11 @@ class ExcelWriter:
 
         # Auto-adjust column widths
         self._auto_adjust_column_widths(worksheet)
+
+
+
+
+
+
+
+

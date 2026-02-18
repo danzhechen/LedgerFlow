@@ -384,3 +384,11 @@ class ErrorDetector:
             len(self.get_errors_by_severity(SEVERITY_CRITICAL)) > 0
             or len(self.get_errors_by_severity(SEVERITY_ERROR)) > 0
         )
+
+
+
+
+
+
+
+

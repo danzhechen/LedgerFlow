@@ -153,6 +153,21 @@ class AccountHierarchy:
             Account object or None if not found
         """
         return self._accounts.get(code)
+    
+    def get_account_by_name(self, name: str) -> Account | None:
+        """
+        Get account by name (useful when mapping rules use names instead of codes).
+
+        Args:
+            name: Account name
+
+        Returns:
+            Account object or None if not found
+        """
+        for account in self._accounts.values():
+            if account.name == name:
+                return account
+        return None
 
     def get_children(self, parent_code: str) -> list[Account]:
         """
@@ -259,3 +274,11 @@ class AccountHierarchy:
 
         loader = AccountHierarchyLoader()
         return loader.load_from_json(file_path)
+
+
+
+
+
+
+
+

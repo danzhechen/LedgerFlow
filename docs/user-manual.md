@@ -200,37 +200,9 @@ Uses rule-engine library syntax:
    - Unique accounts, unique quarters
    - Quarter breakdown
 
-### Error Report (`error_report.xlsx`)
-
-**Sheets:**
-1. **Summary** - Overview statistics and status
-   - Total errors, warnings
-   - Error breakdown by type and severity
-   - Validation summary
-   - Transformation summary
-
-2. **Errors** - Detailed error list
-   - All errors with full context
-   - Color-coded by severity
-   - Entry ID, rule ID, field name, error message
-
-3. **Transformations** - Transformation log
-   - All transformations: source → target
-   - Applied rules
-   - Generated ledger entries
-
-4. **Validation** - Validation results
-   - Validation status and confidence scores
-   - Coverage information
-
-5. **Auto-Fixes** - Auto-fix suggestions (if enabled)
-   - Suggested fixes with confidence scores
-   - Approval status
-
-6. **Original Data** - Preserved input data
-   - Original journal entries for comparison
-
 ### Audit Trail (`audit_trail.xlsx`)
+
+**Purpose:** Complete audit trail for compliance, record-keeping, and technical debugging.
 
 **Sheets:**
 1. **Metadata** - Audit trail metadata
@@ -250,6 +222,62 @@ Uses rule-engine library syntax:
 
 5. **Relationships** - Links between entries and rules
    - Journal entry → Rule → Ledger entry relationships
+
+### Review Preview (`review_preview.xlsx`)
+
+**Purpose:** User-friendly preview and review system for accountants to quickly identify and review problematic entries before finalizing the output.
+
+**Sheets:**
+
+1. **Review Dashboard** - Summary and quick overview
+   - Summary statistics (total entries, entries needing review)
+   - Issues breakdown by type and severity
+   - Quick action guide
+   - Color-coded status indicators
+
+2. **Preview Table** - Complete ledger entries preview
+   - All transformed ledger entries in table format (preview of final output)
+   - Visual status flags (✓ OK, ⚠ Warning, ✗ Critical, ! Error, ℹ Info)
+   - Color-coded rows:
+     - Green: No issues
+     - Yellow: Warnings
+     - Orange: Errors
+     - Red: Critical issues
+     - Blue: Informational items
+   - Review reason column explaining why entry needs attention
+   - Filterable and sortable
+
+3. **Comparison View** - Side-by-side Journal → Ledger comparison
+   - Original journal entries on the left
+   - Transformed ledger entries on the right
+   - Visual arrow (→) showing transformation
+   - Color-coded by status
+   - Shows one-to-many relationships (one journal entry → multiple ledger entries)
+
+4. **Flagged Entries** - Only entries requiring review
+   - Filtered view showing only problematic entries
+   - Sorted by severity (critical → error → warning → info)
+   - Action needed column with specific guidance
+   - Issue type and reason for each flag
+
+**Key Features:**
+- **Visual Flags:** Icons and colors make it easy to spot issues at a glance
+- **Preview of Final Output:** See exactly what the ledger will look like
+- **Problem Identification:** Automatically flags:
+  - Entries with no matching rules
+  - Validation errors and warnings
+  - Unusual amounts (statistical outliers)
+  - Missing account codes
+  - Multiple rules applied (potential conflicts)
+- **Actionable Guidance:** Each flagged entry includes specific action needed
+- **Excel-Native:** Works entirely in Excel - no special tools needed
+
+**How to Use:**
+1. Start with the **Review Dashboard** to get an overview
+2. Review the **Preview Table** to see all entries with visual flags
+3. Use **Comparison View** to verify transformations are correct
+4. Focus on **Flagged Entries** sheet to address issues
+5. After review, use the final ledger output file
 
 ## Configuration
 
@@ -386,3 +414,11 @@ Comprehensive error reporting:
 ---
 
 **Need help?** See [Troubleshooting Guide](./troubleshooting.md) for common issues and solutions.
+
+
+
+
+
+
+
+

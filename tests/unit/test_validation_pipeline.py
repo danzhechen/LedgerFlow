@@ -62,7 +62,7 @@ class TestInputValidationPipeline:
         entries = [
             JournalEntry(
                 entry_id="JE-001",
-                year=2000,  # At lower bound (valid but might trigger warning)
+                year=2024,  # At lower bound (valid but might trigger warning)
                 description="Test Entry",
                 old_type="OL",
                 amount=Decimal("0"),  # Zero amount
@@ -368,3 +368,9 @@ class TestInputValidationPipeline:
         assert result.warning_count == 1
         assert result.entries_processed == 1
         assert result.rules_processed == 0
+
+
+
+
+
+

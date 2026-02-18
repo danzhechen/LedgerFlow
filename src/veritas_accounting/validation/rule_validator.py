@@ -84,12 +84,19 @@ class MappingRuleValidator:
             rule_errors.extend(required_errors)
 
             # 4. Validate account code (if hierarchy provided)
+            # NOTE: Account code validation is NON-BLOCKING (warning only)
+            # Rules with invalid account codes are still used, but a warning is logged
+            # This allows rules to work even if account names don't exactly match hierarchy
             if self.account_hierarchy:
                 account_error = self._validate_account_code(rule)
                 if account_error:
-                    rule_errors.append(account_error)
+                    # Add to errors for reporting, but DON'T add to rule_errors
+                    # This prevents the rule from being filtered out
+                    errors.append(account_error)
+                    # Do NOT add to rule_errors - this is intentional to allow rules to work
 
-            # If no errors so far, add to valid rules and track for conflict detection
+            # If no blocking errors (syntax, field references, required fields), add to valid rules
+            # Account code errors are warnings only, not blocking
             if not rule_errors:
                 valid_rules.append(rule)
                 # Normalize condition for conflict detection (strip whitespace, lowercase)
@@ -101,8 +108,11 @@ class MappingRuleValidator:
                 errors.extend(rule_errors)
 
         # 5. Detect conflicts (same condition → different results)
+        # NOTE: Conflict detection is also NON-BLOCKING for CR/DR pairs
+        # CR/DR pairs with same condition are expected in double-entry bookkeeping
         conflict_errors = self._detect_conflicts(condition_map)
         errors.extend(conflict_errors)
+        # Conflicts are reported but don't prevent rules from being used
 
         # 6. Validate priorities (check for duplicates if needed)
         priority_errors = self._validate_priorities(valid_rules)
@@ -276,6 +286,8 @@ class MappingRuleValidator:
     ) -> Optional[ValidationError]:
         """
         Validate that account code exists in the account hierarchy.
+        
+        Checks both by code and by name (since mapping rules might use account names).
 
         Args:
             rule: MappingRule to validate
@@ -286,23 +298,34 @@ class MappingRuleValidator:
         if not self.account_hierarchy:
             return None
 
+        # Try lookup by code first
         account = self.account_hierarchy.get_account(rule.account_code)
+        # If not found by code, try looking up by name (mapping rules might use names)
+        if not account:
+            account = self.account_hierarchy.get_account_by_name(rule.account_code)
+        
         if account is None:
-            # Get list of available account codes for error message
+            # Get list of available account codes and names for error message
             all_accounts = self.account_hierarchy.get_all_accounts()
             available_codes = ", ".join(
                 sorted([acc.code for acc in all_accounts[:10]])
             )  # Show first 10
             if len(all_accounts) > 10:
                 available_codes += f", ... ({len(all_accounts)} total)"
+            
+            # Also show sample names
+            available_names = ", ".join(
+                sorted([acc.name for acc in all_accounts[:5]])
+            )
 
             return ValidationError(
                 row_number=0,
                 field_name="account_code",
                 error_type="invalid_account_code",
                 error_message=(
-                    f"Account code '{rule.account_code}' does not exist in account hierarchy. "
-                    f"Available codes: {available_codes}"
+                    f"Account code/name '{rule.account_code}' does not exist in account hierarchy. "
+                    f"Available codes: {available_codes}. "
+                    f"Sample names: {available_names}"
                 ),
                 actual_value=rule.account_code,
                 entry_id=rule.rule_id,
@@ -344,25 +367,40 @@ class MappingRuleValidator:
                 if len(same_priority_rules) <= 1:
                     continue
 
-                # Check if they have different account codes
-                account_codes = {rule.account_code for rule in same_priority_rules}
-                if len(account_codes) > 1:
-                    # Conflict: same condition, same priority, different account codes
-                    rule_ids = ", ".join([rule.rule_id for rule in same_priority_rules])
-                    errors.append(
-                        ValidationError(
-                            row_number=0,
-                            field_name="condition,account_code",
-                            error_type="rule_conflict",
-                            error_message=(
-                                f"Multiple rules with same condition and priority ({priority}) "
-                                f"but different account codes: {', '.join(account_codes)}. "
-                                f"Rule IDs: {rule_ids}"
-                            ),
-                            actual_value=normalized_condition,
-                            entry_id=rule_ids,
+                # Group by ledger_type (CR/DR) - CR/DR pairs are expected for double-entry
+                by_ledger_type: dict[str | None, list[MappingRule]] = {}
+                for rule in same_priority_rules:
+                    ledger_type = getattr(rule, 'ledger_type', None)
+                    if ledger_type not in by_ledger_type:
+                        by_ledger_type[ledger_type] = []
+                    by_ledger_type[ledger_type].append(rule)
+                
+                # Check for conflicts within each ledger_type group
+                # CR/DR pairs with different account codes are expected (double-entry bookkeeping)
+                for ledger_type, rules_in_group in by_ledger_type.items():
+                    if len(rules_in_group) <= 1:
+                        continue
+                    
+                    # Check if they have different account codes
+                    account_codes = {rule.account_code for rule in rules_in_group}
+                    if len(account_codes) > 1:
+                        # Conflict: same condition, same priority, same ledger_type, different account codes
+                        rule_ids = ", ".join([rule.rule_id for rule in rules_in_group])
+                        ledger_type_str = f" ({ledger_type})" if ledger_type else ""
+                        errors.append(
+                            ValidationError(
+                                row_number=0,
+                                field_name="condition,account_code",
+                                error_type="rule_conflict",
+                                error_message=(
+                                    f"Multiple rules with same condition, priority ({priority}), "
+                                    f"and ledger_type{ledger_type_str} but different account codes: "
+                                    f"{', '.join(account_codes)}. Rule IDs: {rule_ids}"
+                                ),
+                                actual_value=normalized_condition,
+                                entry_id=rule_ids,
+                            )
                         )
-                    )
 
         return errors
 
@@ -393,3 +431,11 @@ class MappingRuleValidator:
         # - etc.
 
         return errors
+
+
+
+
+
+
+
+

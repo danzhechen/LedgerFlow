@@ -350,3 +350,12 @@ veritas-accounting process --input journal.xlsx --rules rules.xlsx --verbose
 ---
 
 **Ready to get started?** Check out the [Getting Started Guide](./docs/getting-started.md) for detailed installation instructions!
+
+
+
+
+
+
+
+
+

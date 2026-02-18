@@ -60,9 +60,13 @@ class LedgerEntry(BaseModel):
     )
     year: int = Field(
         ...,
-        description="Year of the ledger entry",
+        description="Year of the ledger entry (must match date.year)",
         ge=2000,
         le=2100,
+    )
+    ledger_type: str | None = Field(
+        None,
+        description="Ledger type: 'CR' (Credit) or 'DR' (Debit). None if not specified.",
     )
 
     @field_validator("amount")
@@ -125,3 +129,10 @@ class LedgerEntry(BaseModel):
         }
         extra = "ignore"
         use_enum_values = True
+
+
+
+
+
+
+

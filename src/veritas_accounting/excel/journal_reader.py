@@ -22,13 +22,18 @@ class JournalEntryReader:
     # Default column mappings (can be customized)
     DEFAULT_COLUMN_MAPPING = {
         "year": ["year", "Year", "YEAR", "年份"],
-        "description": ["description", "Description", "DESCRIPTION", "描述", "说明"],
+        "description": ["description", "Description", "DESCRIPTION", "描述", "说明", "摘要"],
         "old_type": ["old_type", "Old Type", "OLD_TYPE", "type", "Type", "TYPE", "类型"],
-        "amount": ["amount", "Amount", "AMOUNT", "金额"],
+        "amount": ["amount", "Amount", "AMOUNT", "金额", "总额"],
         "date": ["date", "Date", "DATE", "日期"],
         "entry_id": ["entry_id", "Entry ID", "ENTRY_ID", "id", "ID", "编号"],
         "quarter": ["quarter", "Quarter", "QUARTER", "季度"],
         "notes": ["notes", "Notes", "NOTES", "备注"],
+        # Special columns for income/expense format
+        "income": ["收入"],
+        "expense": ["支出"],
+        # When 收入/支出 are both empty, use this column for amount (e.g. 理财 for 余利宝收益发放)
+        "amount_fallback": ["理财", "金额", "变动"],
     }
 
     def __init__(
@@ -87,9 +92,9 @@ class JournalEntryReader:
         mapping = {}
         missing_required = []
 
-        # Required fields
-        required_fields = ["entry_id", "year", "description", "old_type", "amount", "date"]
-        optional_fields = ["quarter", "notes"]
+        # Required fields (year is optional - will be extracted from date if not provided)
+        required_fields = ["entry_id", "description", "old_type", "amount", "date"]
+        optional_fields = ["year", "quarter", "notes"]
 
         # Map required fields
         for field in required_fields:
@@ -99,6 +104,23 @@ class JournalEntryReader:
                 missing_required.append(field)
             mapping[field] = column_name
 
+        # Special handling: Check for income/expense columns (prefer these over amount column)
+        income_col = self._find_column(df, "income", self.column_mapping.get("income", []))
+        expense_col = self._find_column(df, "expense", self.column_mapping.get("expense", []))
+        if income_col or expense_col:
+            # We have income/expense columns - use these to calculate amount instead of amount column
+            # Store income/expense column names for calculation later
+            mapping["_income_col"] = income_col  # Store for later use
+            mapping["_expense_col"] = expense_col  # Store for later use
+            # When 收入/支出 are both empty (e.g. 余利宝收益发放 rows), use fallback column for amount
+            fallback_names = self.column_mapping.get("amount_fallback", ["理财", "金额", "变动"])
+            mapping["_amount_fallback_col"] = self._find_column(df, "amount_fallback", fallback_names)
+            # Clear the amount column mapping so we calculate from income/expense
+            mapping["amount"] = None
+            # Remove from missing_required since we'll calculate it
+            if "amount" in missing_required:
+                missing_required.remove("amount")
+
         # Check for missing required columns
         if missing_required:
             available_columns = ", ".join(df.columns.tolist())
@@ -107,7 +129,7 @@ class JournalEntryReader:
                 f"Available columns: {available_columns}"
             )
 
-        # Map optional fields
+        # Map optional fields (including year)
         for field in optional_fields:
             possible_names = self.column_mapping.get(field, [field])
             column_name = self._find_column(df, field, possible_names)
@@ -167,13 +189,25 @@ class JournalEntryReader:
 
                 # Handle NaN/None values
                 if pd.isna(value):
-                    if field in ["entry_id", "year", "description", "old_type", "amount", "date"]:
-                        # Required field is missing
+                    if field in ["entry_id", "date"]:
+                        # Critical required fields - cannot proceed without these
                         return None, ValidationError(
                             f"Row {row_index + 1}: Missing required field '{field}' "
                             f"(column: {column_name})"
                         )
-                    # Optional field, set to None
+                    elif field in ["description", "old_type"]:
+                        # Provide default values for description and old_type if missing
+                        if field == "description":
+                            data[field] = "无描述"  # Default description in Chinese
+                        elif field == "old_type":
+                            data[field] = "OL"  # Default type
+                        continue
+                    elif field == "amount":
+                        # Amount is optional if we have income/expense columns
+                        # Will be calculated later if income/expense columns exist
+                        data[field] = None
+                        continue
+                    # Optional field (year, quarter, notes), set to None
                     data[field] = None
                     continue
 
@@ -186,12 +220,17 @@ class JournalEntryReader:
                         )
                     data[field] = parsed_date
                 elif field == "year":
-                    try:
-                        data[field] = int(float(value))  # Handle float years like 2024.0
-                    except (ValueError, TypeError):
-                        return None, ValidationError(
-                            f"Row {row_index + 1}: Invalid year in column '{column_name}': {value}"
-                        )
+                    # Year is optional - extract from date if not provided
+                    if value is None or pd.isna(value):
+                        # Will extract from date later if date is available
+                        data[field] = None
+                    else:
+                        try:
+                            data[field] = int(float(value))  # Handle float years like 2024.0
+                        except (ValueError, TypeError):
+                            return None, ValidationError(
+                                f"Row {row_index + 1}: Invalid year in column '{column_name}': {value}"
+                            )
                 elif field == "amount":
                     try:
                         data[field] = float(value)
@@ -199,6 +238,9 @@ class JournalEntryReader:
                         return None, ValidationError(
                             f"Row {row_index + 1}: Invalid amount in column '{column_name}': {value}"
                         )
+                elif field in ["_income_col", "_expense_col"]:
+                    # Skip these special mapping fields (used for amount calculation, not data fields)
+                    continue
                 elif field == "quarter":
                     try:
                         data[field] = int(float(value)) if value is not None else None
@@ -210,6 +252,39 @@ class JournalEntryReader:
                     # String fields (description, old_type, entry_id, notes)
                     data[field] = str(value).strip()
 
+            # Calculate amount from income/expense if amount column is missing
+            if "amount" not in data:
+                income_col = column_mapping.get("_income_col")
+                expense_col = column_mapping.get("_expense_col")
+                if income_col or expense_col:
+                    income_val = row.get(income_col) if income_col else None
+                    expense_val = row.get(expense_col) if expense_col else None
+                    income = float(income_val or 0) if income_val is not None and not pd.isna(income_val) else 0
+                    expense = float(expense_val or 0) if expense_val is not None and not pd.isna(expense_val) else 0
+                    data["amount"] = income - expense  # Income is positive, expense is negative
+                    # When both 收入 and 支出 are empty (e.g. 余利宝收益发放 with amount in 理财), use fallback column
+                    if data["amount"] == 0 and (pd.isna(income_val) or income_val is None) and (pd.isna(expense_val) or expense_val is None):
+                        fallback_col = column_mapping.get("_amount_fallback_col")
+                        if fallback_col:
+                            fallback_val = row.get(fallback_col)
+                            if fallback_val is not None and not pd.isna(fallback_val):
+                                try:
+                                    data["amount"] = float(fallback_val)
+                                except (ValueError, TypeError):
+                                    pass
+                else:
+                    # No amount column and no income/expense columns - error
+                    return None, ValidationError(
+                        f"Row {row_index + 1}: Missing required field 'amount' and no income/expense columns found"
+                    )
+            
+            # Always derive year from date when date is present so year and date stay in sync
+            if "date" in data and data["date"] is not None:
+                data["year"] = data["date"].year
+            elif data.get("year") is None or pd.isna(data.get("year")):
+                from datetime import datetime
+                data["year"] = datetime.now().year
+            
             # Create JournalEntry model (Pydantic will validate)
             entry = JournalEntry(**data)
             return entry, None
@@ -279,6 +354,11 @@ class JournalEntryReader:
             # Skip completely empty rows
             if row.isna().all():
                 continue
+            
+            # Skip rows without ID (summary/total rows)
+            entry_id_col = column_mapping.get("entry_id")
+            if entry_id_col and pd.isna(row.get(entry_id_col)):
+                continue
 
             entry, error = self._parse_row(row, column_mapping, idx)
             if entry is not None:
@@ -287,3 +367,9 @@ class JournalEntryReader:
                 errors.append(error)
 
         return entries, errors
+
+
+
+
+
+

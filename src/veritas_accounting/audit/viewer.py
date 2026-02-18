@@ -247,3 +247,11 @@ class TransformationViewer:
         lines.append(f"\n{'='*60}")
 
         return "\n".join(lines)
+
+
+
+
+
+
+
+

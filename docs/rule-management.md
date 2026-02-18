@@ -505,3 +505,11 @@ Document complex rules:
 - See [Example Files](../examples/) for sample rule files
 - Review [User Manual](./user-manual.md) for complete reference
 - Check [Error Handling Guide](./error-handling.md) for rule error troubleshooting
+
+
+
+
+
+
+
+

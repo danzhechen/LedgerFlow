@@ -324,6 +324,8 @@ class TestOutputValidator:
                 quarter=1,
                 year=2024,
                 total_amount=Decimal("1000"),
+                cr_amount=Decimal("1000"),
+                dr_amount=Decimal("0"),
                 entry_count=5,
                 level=1,
             ),
@@ -333,6 +335,8 @@ class TestOutputValidator:
                 quarter=1,
                 year=2024,
                 total_amount=Decimal("500"),
+                cr_amount=Decimal("500"),
+                dr_amount=Decimal("0"),
                 entry_count=3,
                 level=1,
             ),
@@ -363,6 +367,8 @@ class TestOutputValidator:
                 quarter=1,
                 year=2024,
                 total_amount=Decimal("1000"),  # Level 1 total
+                cr_amount=Decimal("1000"),
+                dr_amount=Decimal("0"),
                 entry_count=0,
                 level=1,
             ),
@@ -372,6 +378,8 @@ class TestOutputValidator:
                 quarter=1,
                 year=2024,
                 total_amount=Decimal("400"),
+                cr_amount=Decimal("400"),
+                dr_amount=Decimal("0"),
                 entry_count=2,
                 level=2,
             ),
@@ -381,6 +389,8 @@ class TestOutputValidator:
                 quarter=1,
                 year=2024,
                 total_amount=Decimal("700"),  # 400 + 700 = 1100, not 1000
+                cr_amount=Decimal("700"),
+                dr_amount=Decimal("0"),
                 entry_count=3,
                 level=2,
             ),
@@ -411,6 +421,8 @@ class TestOutputValidator:
                 quarter=1,
                 year=2024,
                 total_amount=Decimal("1100"),  # Level 1 total
+                cr_amount=Decimal("1100"),
+                dr_amount=Decimal("0"),
                 entry_count=0,
                 level=1,
             ),
@@ -420,6 +432,8 @@ class TestOutputValidator:
                 quarter=1,
                 year=2024,
                 total_amount=Decimal("400"),
+                cr_amount=Decimal("400"),
+                dr_amount=Decimal("0"),
                 entry_count=2,
                 level=2,
             ),
@@ -429,6 +443,8 @@ class TestOutputValidator:
                 quarter=1,
                 year=2024,
                 total_amount=Decimal("700"),  # 400 + 700 = 1100 ✓
+                cr_amount=Decimal("700"),
+                dr_amount=Decimal("0"),
                 entry_count=3,
                 level=2,
             ),
@@ -437,3 +453,9 @@ class TestOutputValidator:
         errors = validator.validate_output(journal_entries, ledger_entries, aggregations)
 
         assert not any(e.error_type == "hierarchy_mismatch" for e in errors)
+
+
+
+
+
+

@@ -21,7 +21,7 @@ class JournalEntry(BaseModel):
     )
     year: int = Field(
         ...,
-        description="Year of the journal entry",
+        description="Year of the journal entry (must match date.year when date is set)",
         ge=2000,
         le=2100,
     )
@@ -117,3 +117,9 @@ class JournalEntry(BaseModel):
         extra = "ignore"
         # Use enum values instead of names
         use_enum_values = True
+
+
+
+
+
+

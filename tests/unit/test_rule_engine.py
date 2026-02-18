@@ -239,3 +239,11 @@ class TestRuleEvaluator:
         # Cache should be empty (can't directly test, but verify it still works)
         matches, _ = evaluator.evaluate(rule, entry)
         assert matches is True
+
+
+
+
+
+
+
+

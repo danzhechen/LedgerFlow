@@ -92,6 +92,13 @@ class JournalEntryValidator:
                 if entry_id_column != "entry_id" and entry_id_column in row_dict:
                     row_dict["entry_id"] = row_dict.pop(entry_id_column)
 
+                # Always derive year from date when date is present so year and date stay in sync
+                if "date" in row_dict and row_dict["date"] is not None:
+                    row_dict["year"] = row_dict["date"].year
+                elif row_dict.get("year") is None:
+                    from datetime import datetime
+                    row_dict["year"] = datetime.now().year
+
                 # Create JournalEntry (Pydantic validates types and values)
                 entry = JournalEntry(**row_dict)
                 valid_entries.append(entry)
@@ -265,3 +272,9 @@ class JournalEntryValidator:
                 )
 
         return errors
+
+
+
+
+
+
