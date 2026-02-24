@@ -1,128 +1,67 @@
-# LedgerFlow
+# Veritas 自动记账
 
-**Excel-native accounting automation with complete transparency and trust.**
+基于 Veritas 2020–2024 年流水日记账，自动生成分类总账和季度报表。
 
-Transform your quarterly accounting process from a 5-10 hour manual task into a streamlined, automated workflow. **LedgerFlow** processes hundreds of journal entries through complex mapping rules, generating hierarchical ledger structures—all while maintaining complete transparency and validation.
+## 快速开始
 
-## Overview
-
-**LedgerFlow** is Excel-native accounting automation that actually makes sense. No new tools to learn, no black boxes to worry about—just your familiar Excel files, automated through intelligent rule mapping, with complete audit trails. Turn hours of manual journal-to-ledger translation into a single command, while maintaining 100% accuracy and full visibility into every step.
-
-**Key Features:**
-- ✅ Excel-native workflow (familiar interface, no new tools to learn)
-- ✅ Automated rule application (194 mapping rules applied automatically)
-- ✅ Complete transparency (audit trail, error reports, transformation visibility)
-- ✅ 100% accuracy (comprehensive validation at every stage)
-- ✅ Human oversight (expert review and approval of all changes)
-
-## Quick Start
-
-### Prerequisites
-
-- Python 3.11 or higher
-- pip (Python package manager)
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/danzhechen/LedgerFlow.git
-cd LedgerFlow
-```
-
-2. Create a virtual environment:
-```bash
-python3.11 -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-```
-
-3. Install dependencies:
-```bash
-pip install -e .
-```
-
-4. Install development dependencies (optional):
-```bash
-pip install -e ".[dev]"
-```
-
-### Basic Usage
+### 1. 安装环境（仅首次）
 
 ```bash
-ledgerflow process --input journal.xlsx --rules rules.xlsx --output ./output
+cd veritas-accounting
+bash setup_venv.sh
 ```
 
-> **Note:** The CLI command is still `veritas-accounting` until package renaming is complete. This will be updated in a future release.
-
-## Project Structure
-
-```
-LedgerFlow/
-├── src/veritas_accounting/    # Main package (internal name)
-│   ├── cli/                   # CLI interface
-│   ├── config/                # Configuration management
-│   ├── models/                # Data models (Pydantic)
-│   ├── excel/                 # Excel I/O operations
-│   ├── validation/            # Validation pipeline
-│   ├── rules/                 # Rule engine
-│   ├── transformation/        # Journal → Ledger transformation
-│   ├── audit/                 # Audit trail tracking
-│   ├── reporting/             # Report generation
-│   └── utils/                 # Utilities
-├── tests/                     # Test suite
-├── docs/                      # Documentation
-└── examples/                  # Example files
-```
-
-## Development
-
-### Running Tests
+### 2. 生成报表
 
 ```bash
-pytest
+bash scripts/run_for_accounting.sh
 ```
 
-### Code Quality
+报表输出到 `output/2020/`、`output/2021/`、`output/2022/`、`output/2024/`，每个目录下的 `ledger_output.xlsx` 包含季度汇总和明细。
+
+### 3. 查看规则与未匹配条目
+
+- **规则核对**：`docs/accounting-verification.md` — 已用规则、未匹配类型、数据问题
+- **运行说明**：`docs/如何运行-how-to-run.md` — 详细安装、命令、常见问题
+
+## 项目结构
+
+```
+veritas-accounting/
+├── 账目分类明细.xlsx           # 规则文件（科目与借贷方向）
+├── examples/
+│   └── journal_entry_2020_2024.xlsx   # 流水日记账（输入）
+├── output/                    # 程序生成的报表（运行后生成）
+├── BOOKS/                     # 放人工账本文件（用于季度对比）
+├── docs/
+│   ├── accounting-verification.md    # 规则核对说明（发给会计）
+│   └── 如何运行-how-to-run.md        # 运行指南
+├── scripts/
+│   ├── run_for_accounting.sh         # 一键运行（Mac/Linux）
+│   └── run_for_accounting.bat        # 一键运行（Windows）
+└── src/                       # 程序源码
+```
+
+## 依赖
+
+- Python 3.11+
+- pandas, openpyxl, pydantic, rule-engine, click, pyyaml
+
+详见 `pyproject.toml`。安装：`pip install -e .`
+
+## 提交到 GitHub
+
+首次推送或更新后，在项目根目录执行：
 
 ```bash
-ruff check .
-mypy src/
+git add .
+git status   # 确认 账目分类明细.xlsx、docs/、scripts/ 等已纳入
+git commit -m "Veritas accounting handoff: rules, docs, run scripts"
+git push origin main
 ```
 
-## Documentation
+> `output/`、`.venv/`、`BOOKS/*.xlsx` 已通过 .gitignore 排除，不会提交。
 
-### User Guides
-- [Getting Started](./docs/getting-started.md) - Installation and first run guide
-- [User Manual](./docs/user-manual.md) - Complete feature reference
-- [Configuration Guide](./docs/configuration.md) - Configuration options and setup
-- [Error Handling Guide](./docs/error-handling.md) - Understanding and fixing errors
-- [Troubleshooting Guide](./docs/troubleshooting.md) - Common issues and solutions
-- [Rule Management Guide](./docs/rule-management.md) - Editing and managing mapping rules
+## 许可证
 
-### Technical Documentation
-- [Architecture](./docs/architecture.md) - System architecture and design decisions
-- [PRD](./docs/PRD.md) - Product requirements document
-- [Epics](./docs/epics.md) - Epic and story breakdown
-
-### Examples
-- [Example Files](./examples/) - Sample Excel files showing correct formats
-
-## License
-
-MIT License
-
-## Status
-
-✅ **Epic 1-7 Complete** - Foundation, Input Processing, Rule Engine, Validation, Audit Trail, Output Generation, and User Interface implemented
-
-**Completed Epics:**
-- ✅ Epic 1: Foundation & Project Setup
-- ✅ Epic 2: Input Processing & Validation
-- ✅ Epic 3: Rule Engine & Transformation Core
-- ✅ Epic 4: Validation & Error Detection
-- ✅ Epic 5: Transparency & Audit Trail
-- ✅ Epic 6: Output Generation & Reporting
-- ✅ Epic 7: User Interface & Experience
-- ✅ Epic 8: Documentation & Examples
-
-**Ready for Production Use**
+MIT

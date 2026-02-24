@@ -287,7 +287,7 @@ class UnifiedReportGenerator:
         ws.cell(row=row, column=1, value="Unmatched journal entries (no mapping rule)")
         ws.cell(row=row, column=1).font = Font(bold=True, size=12)
         row += 1
-        headers = ["Entry ID", "Description", "Date", "Amount", "Year"]
+        headers = ["Entry ID", "Type", "Description", "Date", "Amount", "Year"]
         for col, h in enumerate(headers, start=1):
             c = ws.cell(row=row, column=col, value=h)
             c.font = Font(bold=True, color="FFFFFF")
@@ -299,18 +299,20 @@ class UnifiedReportGenerator:
         row += 1
         for entry in unmatched[:500]:  # Cap for sheet size
             ws.cell(row=row, column=1, value=entry.entry_id)
-            ws.cell(row=row, column=2, value=entry.description)
-            ws.cell(row=row, column=3, value=entry.date.isoformat() if entry.date else "")
-            ws.cell(row=row, column=4, value=float(entry.amount))
-            ws.cell(row=row, column=5, value=entry.year)
+            ws.cell(row=row, column=2, value=getattr(entry, "old_type", "") or "")
+            ws.cell(row=row, column=3, value=entry.description)
+            ws.cell(row=row, column=4, value=entry.date.isoformat() if entry.date else "")
+            ws.cell(row=row, column=5, value=float(entry.amount))
+            ws.cell(row=row, column=6, value=entry.year)
             row += 1
         if len(unmatched) > 500:
             ws.cell(row=row, column=1, value=f"... and {len(unmatched) - 500} more")
             row += 1
 
         ws.column_dimensions["A"].width = 18
-        ws.column_dimensions["B"].width = 40
-        ws.column_dimensions["C"].width = 12
-        ws.column_dimensions["D"].width = 14
-        ws.column_dimensions["E"].width = 8
+        ws.column_dimensions["B"].width = 20
+        ws.column_dimensions["C"].width = 40
+        ws.column_dimensions["D"].width = 12
+        ws.column_dimensions["E"].width = 14
+        ws.column_dimensions["F"].width = 8
         ws.freeze_panes = "A2"

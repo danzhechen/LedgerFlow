@@ -283,18 +283,112 @@ class RuleApplicator:
 
         def _ledger_type_for(role: str) -> str:
             """
-            Determine ledger_type ('CR' or 'DR') for a rule role,
-            respecting the sign of the journal amount and 押金 flip.
+            Determine ledger_type ('CR' or 'DR') for a rule role.
+
+            Rules in 账目分类明细 encode the correct accounting direction, so for
+            normal entries we apply as-is.  Two exceptions require flipping:
+
+            1. Deposit entries (OL-D / 押金): rules are written with an inverted
+               convention. We flip once for convention. If the amount is negative
+               (deposit being returned), we flip a second time so the net is correct.
+
+            2. Income reversals: when an income rule (CR account in 4xxx family)
+               has a negative amount the entry is a refund/reversal, so we flip
+               CR↔DR to correctly debit the income account.  This does NOT apply
+               to expense rules (CR account = 银行存款, 1xxx), which are already
+               written for the payment-out direction and must never be flipped.
             """
-            if is_normal_direction:
-                base = role
-            else:
-                base = "DR" if role == "CR" else "CR"
-            # 押金: 账目分类明细 rules are written with opposite sides; flip once.
             if is_deposit_refund:
+                # Step 1: flip for reversal (negative deposit amount = returning deposit)
+                base = role
+                if not is_normal_direction:
+                    base = "DR" if base == "CR" else "CR"
+                # Step 2: flip for deposit-rule convention (rules written inverted)
                 base = "DR" if base == "CR" else "CR"
+            else:
+                # Check for income reversal: CR account is an income account (4xxx)
+                # and the journal amount is negative (refund / contra-revenue).
+                is_income_reversal = False
+                if account_hierarchy and cr_rule and not is_normal_direction:
+                    acc = account_hierarchy.get_account_by_name(cr_rule.account_code)
+                    if acc and acc.code.startswith("4"):
+                        is_income_reversal = True
+                if is_income_reversal:
+                    base = "DR" if role == "CR" else "CR"
+                else:
+                    base = role
             return base
         
+        # OL 押金分拆: for OL income (positive amount) in 2024, split into tuition (收入OL) and deposit (应付OL押金)
+        # so pipeline 收入OL net aligns with human book (human records ~150 deposit per OL payment).
+        OL_DEPOSIT_SPLIT_PER_ENTRY = Decimal("150")
+        if (
+            ot == "OL"
+            and is_normal_direction
+            and base_amount > 0
+            and entry.date.year == 2024
+            and cr_rule
+            and dr_rule
+            and account_hierarchy
+        ):
+            deposit_portion = min(OL_DEPOSIT_SPLIT_PER_ENTRY, base_amount)
+            tuition_portion = base_amount - deposit_portion
+            acc_deposit = account_hierarchy.get_account_by_name("应付OL押金")
+            acc_tuition = account_hierarchy.get_account_by_name(cr_rule.account_code)
+            acc_bank = account_hierarchy.get_account_by_name(dr_rule.account_code)
+            if acc_deposit and acc_tuition and acc_bank and deposit_portion > 0:
+                entry_year = entry.date.year
+                # DR 银行存款 (full amount received)
+                ledger_entries.append(
+                    LedgerEntry(
+                        entry_id=f"LE-{entry.entry_id}-{dr_rule.rule_id}",
+                        account_code=dr_rule.account_code,
+                        account_path=acc_bank.full_path,
+                        amount=base_amount,
+                        date=entry.date,
+                        description=entry.description,
+                        source_entry_id=entry.entry_id,
+                        rule_applied=dr_rule.rule_id,
+                        quarter=quarter,
+                        year=entry_year,
+                        ledger_type="DR",
+                    )
+                )
+                # CR 收入OL (tuition portion)
+                ledger_entries.append(
+                    LedgerEntry(
+                        entry_id=f"LE-{entry.entry_id}-{cr_rule.rule_id}-OL",
+                        account_code=cr_rule.account_code,
+                        account_path=acc_tuition.full_path,
+                        amount=tuition_portion,
+                        date=entry.date,
+                        description=entry.description,
+                        source_entry_id=entry.entry_id,
+                        rule_applied=cr_rule.rule_id,
+                        quarter=quarter,
+                        year=entry_year,
+                        ledger_type="CR",
+                    )
+                )
+                # CR 应付OL押金 (deposit portion)
+                ledger_entries.append(
+                    LedgerEntry(
+                        entry_id=f"LE-{entry.entry_id}-{cr_rule.rule_id}-OL-D",
+                        account_code="应付OL押金",
+                        account_path=acc_deposit.full_path,
+                        amount=deposit_portion,
+                        date=entry.date,
+                        description=entry.description,
+                        source_entry_id=entry.entry_id,
+                        rule_applied=cr_rule.rule_id,
+                        quarter=quarter,
+                        year=entry_year,
+                        ledger_type="CR",
+                    )
+                )
+                return ledger_entries
+            # else fall through to normal handling
+
         # Create CR-side entry if CR rule exists
         if cr_rule:
             # Validate account code exists in hierarchy (if provided)
