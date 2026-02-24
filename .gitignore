@@ -148,8 +148,14 @@ logs/
 *.xlsx
 !examples/*.xlsx
 !tests/fixtures/*.xlsx
+!账目分类明细.xlsx
 output/
+BOOKS/*.xlsx
 *.log
+*_backup_*.xlsx
+*.bak*
+*_ledger_rules.xlsx
+*_old_type_rules.xlsx
 
 # BMad Method structure (workflow and configuration files)
 .bmad/
@@ -166,10 +172,10 @@ output/
 
 # Confidential and sensitive information
 # Real accounting data files (exclude sample files)
-账目分类明细.xlsx
 *账目*.xlsx
 *分类*.xlsx
 *明细*.xlsx
+!账目分类明细.xlsx
 *真实*.xlsx
 *actual*.xlsx
 *real*.xlsx
