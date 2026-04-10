@@ -10,6 +10,7 @@ from veritas_accounting.audit.trail import AuditTrail
 from veritas_accounting.config.settings import AppConfig
 from veritas_accounting.excel.journal_reader import JournalEntryReader
 from veritas_accounting.excel.rule_reader import MappingRuleReader
+from veritas_accounting.inference import TypeInferrer
 from veritas_accounting.models.account_loader import AccountHierarchyLoader
 from veritas_accounting.models.journal import JournalEntry
 from veritas_accounting.reporting.unified_report import UnifiedReportGenerator
@@ -92,6 +93,11 @@ class ProcessingPipeline:
                 if type_mapping:
                     journal_entries = self._apply_type_mapping(journal_entries, type_mapping)
                     click.echo(f"   ✓ Applied type mapping from account hierarchy file ({len(type_mapping)} mappings)")
+
+            # Step 2b: Heuristic type inference for entries still missing old_type.
+            # TypeInferrer extracts (keyword, old_type) pairs from rule conditions and
+            # uses them to suggest/auto-apply types before rule application.
+            journal_entries = self._run_type_inference(journal_entries, rules)
 
             # Step 3: Read account hierarchy (optional)
             account_hierarchy = None
@@ -194,6 +200,60 @@ class ProcessingPipeline:
             click.echo(f"\n❌ Error during processing: {e}", err=True)
             return results
 
+    def _run_type_inference(
+        self,
+        journal_entries: list[JournalEntry],
+        rules: list,
+    ) -> list[JournalEntry]:
+        """
+        Run heuristic type inference for entries still missing old_type.
+
+        High-confidence suggestions (≥ TypeInferrer.HIGH_CONFIDENCE_THRESHOLD) are
+        auto-applied directly to entry.old_type so rule matching proceeds normally.
+        Low-confidence suggestions are stored as a hint in entry.notes for review.
+
+        Returns the (possibly mutated) list of journal entries.
+        """
+        missing = [e for e in journal_entries if (e.old_type or "").strip() == "__MISSING_TYPE__"]
+        if not missing:
+            return journal_entries
+
+        inferrer = TypeInferrer(rules)
+        if not inferrer.has_index:
+            return journal_entries
+
+        auto_applied = 0
+        suggestions_noted = 0
+
+        for entry in missing:
+            suggestion = inferrer.suggest(
+                entry.description,
+                float(entry.amount),
+                entry.year,
+            )
+            if suggestion is None:
+                continue
+
+            if suggestion.is_high_confidence:
+                entry.old_type = suggestion.suggested_type
+                auto_applied += 1
+            else:
+                hint = (
+                    f"[型别建议/Type suggestion: {suggestion.suggested_type} "
+                    f"({suggestion.confidence:.0%}) — {suggestion.reason}]"
+                )
+                entry.notes = hint if not entry.notes else f"{hint} {entry.notes}"
+                suggestions_noted += 1
+
+        if auto_applied or suggestions_noted:
+            click.echo(
+                f"   🔍 类别推断 / Type inference: "
+                f"自动应用 {auto_applied} 条 (高置信度), "
+                f"建议审查 {suggestions_noted} 条 (低置信度)"
+            )
+
+        return journal_entries
+
     # Removed process_dual_ledger method - dual ledger support removed
     # All entries now use new ledger rules only
 
@@ -205,11 +265,43 @@ class ProcessingPipeline:
             Tuple of (journal_entries, errors)
         """
         try:
-            # Check if sheet_name is specified in config (for multi-sheet processing)
-            sheet_name = getattr(self.config, 'sheet_name', None)
+            sheet_name = getattr(self.config, "sheet_name", None)
             reader = JournalEntryReader(sheet_name=sheet_name)
             entries, errors = reader.read_journal_entries(self.config.input.journal_file)
             error_messages = [str(e) for e in errors]
+
+            # Guard: if the sheet name looks like a year (e.g. "2022"), ensure all rows belong to that year.
+            # This prevents misdated rows (e.g. 2023 dates living in the 2022 sheet) from contaminating output.
+            sheet_year: Optional[int] = None
+            if sheet_name is not None:
+                s = str(sheet_name).strip()
+                if len(s) == 4 and s.isdigit():
+                    try:
+                        sheet_year = int(s)
+                    except ValueError:
+                        sheet_year = None
+
+            if sheet_year is not None:
+                mismatched = [e for e in entries if getattr(e, "year", None) != sheet_year]
+                if mismatched:
+                    sample_ids = ", ".join(
+                        [str(getattr(e, "entry_id", "")) for e in mismatched[:5] if getattr(e, "entry_id", None)]
+                    )
+                    msg = (
+                        f"工作表“{sheet_name}”中发现 {len(mismatched)} 条日期年份不一致的条目："
+                        f"条目日期年份 != {sheet_year}。"
+                    )
+                    if sample_ids:
+                        msg += f" 示例 entry_id: {sample_ids}"
+
+                    if getattr(self.config, "validation", None) and self.config.validation.level == "strict":
+                        # In strict mode, fail fast so users must fix the source data.
+                        return [], [msg]
+
+                    # In lenient mode, drop mismatched rows and continue, surfacing a warning.
+                    error_messages.append(msg)
+                    entries = [e for e in entries if getattr(e, "year", None) == sheet_year]
+
             return entries, error_messages
         except Exception as e:
             return [], [f"Failed to read journal entries: {e}"]

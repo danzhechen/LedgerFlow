@@ -61,6 +61,11 @@ def main() -> None:
     help="Validation level: 'strict' or 'lenient' (default: strict)",
 )
 @click.option(
+    "--sheet",
+    type=str,
+    help="Excel worksheet name to process (e.g. '2022'). If omitted, uses the first sheet.",
+)
+@click.option(
     "--auto-fix",
     is_flag=True,
     help="Enable auto-fix suggestions for validation errors",
@@ -78,6 +83,7 @@ def process(
     output: str,
     config: str | None,
     validation_level: str | None,
+    sheet: str | None,
     auto_fix: bool,
     verbose: bool,
 ) -> None:
@@ -104,6 +110,7 @@ def process(
             output_dir=output,
             validation_level=validation_level,
             auto_fix_enabled=auto_fix,
+            sheet_name=sheet,
         )
 
         # Validate configuration
@@ -246,6 +253,7 @@ def _load_config(
     output_dir: str | None = None,
     validation_level: str | None = None,
     auto_fix_enabled: bool = False,
+    sheet_name: str | None = None,
 ) -> AppConfig:
     """
     Load configuration from multiple sources with proper priority.
@@ -301,6 +309,7 @@ def _load_config(
         output_dir=output_dir,
         validation_level=validation_level,
         auto_fix_enabled=auto_fix_enabled if auto_fix_enabled else None,
+        sheet_name=sheet_name,
     )
 
     return config

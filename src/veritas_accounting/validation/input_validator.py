@@ -92,12 +92,29 @@ class JournalEntryValidator:
                 if entry_id_column != "entry_id" and entry_id_column in row_dict:
                     row_dict["entry_id"] = row_dict.pop(entry_id_column)
 
-                # Always derive year from date when date is present so year and date stay in sync
+                # Normalize date so downstream validation behaves consistently.
+                # Keep year validation meaningful: only derive year if it's missing.
                 if "date" in row_dict and row_dict["date"] is not None:
-                    row_dict["year"] = row_dict["date"].year
-                elif row_dict.get("year") is None:
-                    from datetime import datetime
-                    row_dict["year"] = datetime.now().year
+                    date_val = row_dict["date"]
+                    if isinstance(date_val, str):
+                        # Best-effort parsing. If it fails, keep original string so Pydantic
+                        # can report a structured date validation error (instead of an unexpected error).
+                        try:
+                            row_dict["date"] = pd.to_datetime(date_val, errors="raise").to_pydatetime()
+                        except Exception:
+                            pass
+
+                # Auto-correct out-of-range year only when we have a valid parsed date.
+                year_val = row_dict.get("year")
+                date_parsed = row_dict.get("date")
+                if isinstance(year_val, (int, float)) and (year_val < 2000 or year_val > 2100):
+                    if isinstance(date_parsed, datetime):
+                        row_dict["year"] = date_parsed.year
+                    else:
+                        row_dict["year"] = max(2000, min(int(year_val), 2100))
+
+                if row_dict.get("year") is None and isinstance(date_parsed, datetime):
+                    row_dict["year"] = date_parsed.year
 
                 # Create JournalEntry (Pydantic validates types and values)
                 entry = JournalEntry(**row_dict)

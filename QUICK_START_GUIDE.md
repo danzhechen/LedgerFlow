@@ -1,17 +1,19 @@
-# veritas-accounting Quick Start Guide
+# veritas-accounting 快速入门 / Quick Start Guide
 
-## What is veritas-accounting?
+## 这是什么？/ What is veritas-accounting?
 
-**veritas-accounting** automates the transformation of journal entries into ledger entries using mapping rules. It's designed for Excel-native workflows - you work with familiar Excel files, and the system handles the complex rule application and validation.
+**veritas-accounting** 自动将日记账分录通过映射规则转换成分类账，专为 Excel 工作流设计。
 
-### The Problem It Solves
+**veritas-accounting** automates the transformation of journal entries into ledger entries using mapping rules. It's designed for Excel-native workflows.
 
-Instead of manually processing 691+ journal entries through 194 mapping rules (taking 5-10 hours), veritas-accounting:
-- ✅ Reads your journal entries from Excel
-- ✅ Applies all mapping rules automatically
-- ✅ Generates hierarchical ledger output
-- ✅ Creates comprehensive error reports
-- ✅ Provides complete audit trail
+### 解决的问题 / The Problem It Solves
+
+无需手动处理 691+ 条日记账分录，工具将：
+- ✅ 从 Excel 读取日记账分录
+- ✅ 自动应用所有映射规则
+- ✅ 生成按账户层级分类的分类账
+- ✅ 自动检测并标记问题条目（类型缺失、年份错误、无规则匹配等）
+- ✅ 生成统一的审查报告（`ledger_output.xlsx`）
 
 ---
 
@@ -36,10 +38,9 @@ veritas-accounting process \
 ### Step 3: Review Output Files
 
 Check the `./output` directory for:
-- `ledger_output.xlsx` - Your transformed ledger entries
-- `quarterly_report.xlsx` - Quarterly summaries
-- `error_report.xlsx` - Validation and transformation log
-- `audit_trail.xlsx` - Complete audit trail
+- `ledger_output.xlsx` — 统一报告（分类账 + 季度汇总 + 审查标记 + 审计轨迹）
+
+所有输出合并在一个工作簿中，包含多个工作表（Ledger Output、Account Summary、Quarterly Report、Flagged Entries 等）。
 
 ---
 
@@ -110,31 +111,15 @@ After processing, your journal entries are transformed into ledger entries:
 - Organized by account hierarchy (`account_path`, `level`)
 - Preserves all original data (description, amount, date, etc.)
 
-### Quarterly Report (`quarterly_report.xlsx`)
+### 统一报告 (`ledger_output.xlsx`) 中的工作表
 
-Multiple sheets showing:
-- **Quarterly Totals** - Summary by quarter
-- **Hierarchy Summary** - Totals by account level
-- **Statistics** - Overall metrics
-
-### Error Report (`error_report.xlsx`)
-
-Multiple sheets showing:
-- **Summary** - Overview of errors and warnings
-- **Errors** - Detailed error list with row numbers
-- **Transformations** - What transformations were applied
-- **Validation** - Input validation results
-- **Auto-Fixes** - Automatic fixes that were applied
-- **Original Data** - Original input for comparison
-
-### Audit Trail (`audit_trail.xlsx`)
-
-Complete traceability showing:
-- **Metadata** - Processing timestamp, user, system version
-- **Transformations** - Every transformation with before/after
-- **Rules** - All rules that were applied
-- **Entries** - All journal and ledger entries
-- **Relationships** - Links between journal entries and ledger entries
+| 工作表 | 内容 |
+|--------|------|
+| Ledger Output | 所有分类账分录，含账户代码和来源 |
+| Account Summary | 按账户层级汇总金额 |
+| Quarterly Report | 按季度汇总 |
+| Flagged Entries | 需审查的条目（NO_MATCH、MISSING_TYPE、年份错误等） |
+| Audit Trail | 完整审计轨迹（处理时间、规则应用记录） |
 
 ---
 
@@ -143,20 +128,20 @@ Complete traceability showing:
 ### Scenario: Process Q1 2024 Journal Entries
 
 ```bash
-# 1. Validate input files first (recommended)
+# 1. 先验证输入文件（推荐）
 veritas-accounting validate \
   --input journal_entries_q1.xlsx \
   --rules mapping_rules.xlsx
 
-# 2. Process the entries
+# 2. 处理分录
 veritas-accounting process \
   --input journal_entries_q1.xlsx \
   --rules mapping_rules.xlsx \
   --output ./output/q1_2024
 
-# 3. Review the output
-# Open ./output/q1_2024/error_report.xlsx first
-# Then check ledger_output.xlsx
+# 3. 审查结果
+# 打开 ./output/q1_2024/ledger_output.xlsx
+# 查看 "Flagged Entries" 工作表了解需人工处理的条目
 ```
 
 ### What You'll See During Processing
@@ -170,11 +155,8 @@ veritas-accounting process \
    ✓ Input validation passed
 🔄 Applying mapping rules and transforming entries...
    ✓ Generated 1250 ledger entries
-📊 Generating reports...
-   ✓ Generated ledger output: ./output/ledger_output.xlsx
-   ✓ Generated quarterly report: ./output/quarterly_report.xlsx
-   ✓ Generated error report: ./output/error_report.xlsx
-   ✓ Exported audit trail: ./output/audit_trail.xlsx
+📊 Generating report...
+   ✓ Generated report: ./output/ledger_output.xlsx
 
 ✅ Processing complete!
 📁 Output files saved to: ./output
@@ -322,7 +304,7 @@ LE-001: Account A1, Payment received from customer, $1000, 2024-01-15
 ## Getting Help
 
 - **CLI Help:** `veritas-accounting --help` or `veritas-accounting process --help`
-- **Error Reports:** Always check `error_report.xlsx` for detailed information
+- **审查报告 / Review Report:** 打开 `ledger_output.xlsx`，查看 "Flagged Entries" 工作表
 - **Documentation:** See `docs/` folder for complete guides
 - **Examples:** Check `examples/` folder for sample files
 

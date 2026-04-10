@@ -84,6 +84,9 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+markers = [
+    "integration: integration tests (may require large Excel fixtures or external files)",
+]
 addopts = [
     "--strict-markers",
     "--strict-config",

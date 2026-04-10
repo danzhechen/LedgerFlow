@@ -67,7 +67,9 @@ class TestRuleApplicator:
 
         assert result.no_match is True
         assert len(result.applied_rules) == 0
-        assert len(result.ledger_entries) == 0
+        # No-match uses placeholder DR/CR pair so the amount is visible for review.
+        assert len(result.ledger_entries) == 2
+        assert {e.ledger_type for e in result.ledger_entries} == {"DR", "CR"}
 
     def test_multiple_rules_priority(self) -> None:
         """Test that rules are applied in priority order."""
@@ -317,6 +319,48 @@ class TestRuleApplicator:
         # 押金 flip: CR rule → DR entry, DR rule → CR entry
         assert by_account["2301"] == "DR"
         assert by_account["1100"] == "CR"
+
+    def test_yulibao_internal_transfer_does_not_hit_investment_income(self) -> None:
+        """余利宝 internal transfers should be bank-to-bank (net 0), not investment income."""
+        # Even if rules would map it to investment income, the applicator should override.
+        inv_cr = MappingRule(
+            rule_id="R-INV-CR",
+            condition="old_type == 'INV'",
+            old_type="INV",
+            account_code="4030",
+            priority=10,
+        )
+        inv_cr.ledger_type = "CR"
+        bank_dr = MappingRule(
+            rule_id="R-INV-DR",
+            condition="old_type == 'INV'",
+            old_type="INV",
+            account_code="1100",
+            priority=10,
+        )
+        bank_dr.ledger_type = "DR"
+
+        applicator = RuleApplicator([inv_cr, bank_dr])
+        accounts = [
+            Account(code="1100", name="银行存款", level=1, full_path="资产 > 银行存款"),
+            Account(code="4030", name="投资收益", level=1, full_path="收入 > 投资收益"),
+        ]
+        hierarchy = AccountHierarchy(accounts)
+
+        entry = JournalEntry(
+            entry_id="JE-YLB",
+            year=2024,
+            description="余利宝-基金赎回，转账到支付宝",
+            old_type="INV",
+            amount=Decimal("123.45"),
+            date=datetime(2024, 1, 2),
+        )
+        result = applicator.apply_rules(entry, hierarchy)
+
+        assert result.no_match is False
+        assert len(result.ledger_entries) == 2
+        assert {e.account_code for e in result.ledger_entries} == {"1100"}
+        assert {e.ledger_type for e in result.ledger_entries} == {"DR", "CR"}
 
 
 

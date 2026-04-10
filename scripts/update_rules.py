@@ -9,10 +9,13 @@ Writes to 账目分类明细_updated.xlsx (review before replacing original).
 
 import shutil
 import os
+from pathlib import Path
+
 import openpyxl
 
-RULES_FILE = "/Users/JerryChen/proj/cursor/veritas-accounting/账目分类明细.xlsx"
-OUT_FILE   = "/Users/JerryChen/proj/cursor/veritas-accounting/账目分类明细_updated.xlsx"
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+RULES_FILE = str(_REPO_ROOT / "账目分类明细.xlsx")
+OUT_FILE = str(_REPO_ROOT / "账目分类明细_updated.xlsx")
 
 # ─── Rows to DELETE (1-based row numbers in journal_to_ledger sheet) ──────────
 # Decision rationale documented beside each entry.

@@ -11,6 +11,10 @@ import sys
 import openpyxl
 from collections import defaultdict
 
+from pathlib import Path
+
+from veritas_accounting.utils.books import find_reference_book
+
 # ─── Paths ───────────────────────────────────────────────────────────────────
 # BASE is the veritas-accounting project root (parent of scripts/).
 # Works correctly regardless of which directory the script is called from.
@@ -287,7 +291,8 @@ def compare_year(year):
         print(f"  No pipeline output for {year}")
         return
 
-    wb = openpyxl.load_workbook(BOOKS[year], data_only=True)
+    books_path = find_reference_book(Path(_BOOKS_DIR), year)
+    wb = openpyxl.load_workbook(str(books_path), data_only=True)
 
     if year == 2020:
         human = load_human_2020(wb)
