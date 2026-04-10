@@ -79,6 +79,38 @@ scripts\run_for_accounting.bat
 
 > 运行中出现 `⚠️ X entries had no matching rules` 或 `Duplicate entry ID` 属于已知情况，不影响其他年份报表的生成。详见 `docs/accounting-verification.md` 第二节和第三节。
 
+### 3.1 输入文件名不再强依赖（推荐做法：使用 input/ 目录）
+
+默认脚本会读取：
+
+- `examples/journal_entry_2020_2024.xlsx`
+- `账目分类明细.xlsx`
+
+如果你要跑真实账本，推荐在项目根目录新建 `input/` 文件夹（自行创建即可），把文件放进去，然后设置环境变量覆盖默认路径：
+
+**macOS / Linux：**
+
+```bash
+export VERITAS_JOURNAL_FILE="input/journal.xlsx"
+export VERITAS_RULES_FILE="input/账目分类明细.xlsx"
+export VERITAS_OUTPUT_DIR="output"
+bash scripts/run_for_accounting.sh
+```
+
+**Windows（cmd）：**
+
+```bat
+set VERITAS_JOURNAL_FILE=input\journal.xlsx
+set VERITAS_RULES_FILE=input\账目分类明细.xlsx
+set VERITAS_OUTPUT_DIR=output
+scripts\run_for_accounting.bat
+```
+
+### 3.2 会自动处理哪些 sheet（避免漏跑 2023）
+
+- 如果 Excel 里存在 `2020` / `2021` / `2022` / `2023` 这种“年份命名”的 sheet，会 **只处理这些年份 sheet（按年份顺序）**。\n
+- 如果没有年份命名的 sheet，则处理全部 sheet。
+
 ---
 
 ## 四、如何查看报表
@@ -98,7 +130,8 @@ scripts\run_for_accounting.bat
 
 ## 五、如何放人工账本文件（用于季度对比）
 
-如果需要运行**程序报表 vs 人工账本**的对比，请将历年人工账本 Excel 放入项目根目录下的 `BOOKS/` 文件夹，并按以下文件名命名（名称必须一致）：
+如果需要运行**程序报表 vs 人工账本**的对比，请将历年人工账本 Excel 放入项目根目录下的 `BOOKS/` 文件夹。\n
+文件名现在支持常见下载变体（例如 `(... (1).xlsx)`），但仍建议使用下面的标准命名，便于沟通：
 
 ```
 veritas-accounting/
@@ -134,6 +167,7 @@ python scripts\compare_quarterly.py
 | 某个年份报 `⚠️ X entries had no matching rules` | 正常现象；这些条目已列入 `docs/accounting-verification.md` 第二节待会计确认 |
 | 2022 报 `Duplicate entry ID` | 已知数据问题（I-2-1 / I-2-2），见 `docs/accounting-verification.md` 第三节；不影响其他年份运行 |
 | `BOOKS/` 中的文件找不到 | 检查文件名是否与第五节要求完全一致（包括空格和括号） |
+| `BOOKS/` 中的文件找不到（新版本） | 仍建议按标准命名；若出现下载后的 `(1)` 等后缀，程序会尝试自动识别 |
 
 ---
 

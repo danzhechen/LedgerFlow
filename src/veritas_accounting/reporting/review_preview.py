@@ -28,6 +28,7 @@ class ReviewStatus(Enum):
 
     OK = "ok"  # No issues
     NO_MATCH = "no_match"  # No matching rule found
+    MISSING_TYPE = "missing_type"  # Journal entry missing type (requires manual classification)
     VALIDATION_ERROR = "validation_error"  # Validation error
     VALIDATION_WARNING = "validation_warning"  # Validation warning
     UNUSUAL_AMOUNT = "unusual_amount"  # Amount is unusually large/small
@@ -162,6 +163,23 @@ class ReviewPreviewGenerator:
                             source_entry_id=record.entry_id,
                         )
                     )
+
+        # Check for journal entries with missing type marker (produced by JournalEntryReader)
+        for entry in journal_entries:
+            if (entry.old_type or "").strip() == "__MISSING_TYPE__":
+                reason = "Journal type is missing; please classify this entry (类型/Type) or add rules to infer it"
+                # Surface any low-confidence type suggestion that was stored in notes
+                if entry.notes and "[型别建议/Type suggestion:" in entry.notes:
+                    reason = f"{reason}. 自动推断建议 (低置信度): {entry.notes}"
+                self.review_flags.append(
+                    EntryReviewFlag(
+                        entry_id=entry.entry_id,
+                        status=ReviewStatus.MISSING_TYPE,
+                        reason=reason,
+                        severity="error",
+                        source_entry_id=entry.entry_id,
+                    )
+                )
 
         # Check validation errors
         # Errors reference journal entry IDs, not ledger entry IDs
@@ -458,6 +476,7 @@ class ReviewPreviewGenerator:
         # Issue type counts
         issue_type_labels = {
             "no_match": "No Matching Rule",
+            "missing_type": "Missing Journal Type",
             "validation_error": "Validation Error",
             "validation_warning": "Validation Warning",
             "unusual_amount": "Unusual Amount",
@@ -958,6 +977,7 @@ class ReviewPreviewGenerator:
             # Action needed
             action_map = {
                 ReviewStatus.NO_MATCH: "Review journal entry and add/update mapping rule",
+                ReviewStatus.MISSING_TYPE: "Fill journal Type (类型) or add rules so the tool can infer it",
                 ReviewStatus.VALIDATION_ERROR: "Fix data error in journal entry",
                 ReviewStatus.VALIDATION_WARNING: "Review warning - may need correction",
                 ReviewStatus.UNUSUAL_AMOUNT: "Verify amount is correct",

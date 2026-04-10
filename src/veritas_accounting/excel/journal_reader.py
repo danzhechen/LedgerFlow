@@ -180,6 +180,7 @@ class JournalEntryReader:
         try:
             # Extract values using column mapping
             data = {}
+            warning: Optional[ValidationError] = None
             for field, column_name in column_mapping.items():
                 if column_name is None:
                     # Optional field not found, skip
@@ -200,7 +201,12 @@ class JournalEntryReader:
                         if field == "description":
                             data[field] = "无描述"  # Default description in Chinese
                         elif field == "old_type":
-                            data[field] = "OL"  # Default type
+                            # Do not silently default to a real type; force review downstream.
+                            data[field] = "__MISSING_TYPE__"
+                            warning = ValidationError(
+                                f"Row {row_index + 1}: Missing required field 'old_type' "
+                                f"(column: {column_name})"
+                            )
                         continue
                     elif field == "amount":
                         # Amount is optional if we have income/expense columns
@@ -287,7 +293,7 @@ class JournalEntryReader:
             
             # Create JournalEntry model (Pydantic will validate)
             entry = JournalEntry(**data)
-            return entry, None
+            return entry, warning
 
         except PydanticValidationError as e:
             # Pydantic validation errors

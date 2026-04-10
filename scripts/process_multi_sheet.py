@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from veritas_accounting.cli.processor import ProcessingPipeline
 from veritas_accounting.config.settings import AppConfig
+from veritas_accounting.utils.sheets import default_sheets_to_process
 
 
 def get_sheet_names(excel_file: str) -> list[str]:
@@ -162,7 +163,7 @@ def main(
                 click.echo(f"Available sheets: {', '.join(all_sheets)}", err=True)
                 sys.exit(1)
         else:
-            sheets_to_process = all_sheets
+            sheets_to_process = default_sheets_to_process(all_sheets)
 
         click.echo(f"📊 Found {len(all_sheets)} sheets: {', '.join(all_sheets)}")
         click.echo(f"🔄 Processing {len(sheets_to_process)} sheet(s)...")

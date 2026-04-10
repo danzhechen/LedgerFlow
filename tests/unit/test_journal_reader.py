@@ -265,6 +265,42 @@ class TestJournalEntryReader:
             if tmp_path.exists():
                 tmp_path.unlink()
 
+    def test_missing_old_type_is_marked_and_flagged(self):
+        """Missing old_type should not silently become a real type; it should force review."""
+        reader = JournalEntryReader()
+
+        with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
+            tmp_path = Path(tmp.name)
+
+        try:
+            wb = Workbook()
+            ws = wb.active
+            ws["A1"] = "entry_id"
+            ws["B1"] = "year"
+            ws["C1"] = "description"
+            ws["D1"] = "old_type"
+            ws["E1"] = "amount"
+            ws["F1"] = "date"
+
+            ws["A2"] = "JE-001"
+            ws["B2"] = 2024
+            ws["C2"] = "缺少类型"
+            ws["D2"] = None  # Missing old_type
+            ws["E2"] = 100
+            ws["F2"] = "2024-01-15"
+
+            wb.save(tmp_path)
+            wb.close()
+
+            entries, errors = reader.read_journal_entries(tmp_path)
+
+            assert len(entries) == 1
+            assert entries[0].old_type == "__MISSING_TYPE__"
+            assert any("Missing required field 'old_type'" in str(e) for e in errors)
+        finally:
+            if tmp_path.exists():
+                tmp_path.unlink()
+
     def test_read_journal_entries_optional_fields(self):
         """Test that optional fields (quarter, notes) are handled correctly."""
         reader = JournalEntryReader()

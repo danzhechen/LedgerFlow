@@ -262,6 +262,28 @@ class TestReviewPreviewGenerator:
         assert no_match_flags[0].entry_id == "JE-003"
         assert no_match_flags[0].severity == "error"
 
+    def test_flag_missing_type_entries(self, sample_ledger_entries):
+        """Entries with missing type marker should be flagged for review."""
+        journal_entries = [
+            JournalEntry(
+                entry_id="JE-MISSING-TYPE",
+                year=2024,
+                description="缺少类型",
+                old_type="__MISSING_TYPE__",
+                amount=Decimal("1.00"),
+                date=datetime(2024, 1, 1),
+            )
+        ]
+        generator = ReviewPreviewGenerator()
+        generator._analyze_entries(sample_ledger_entries, journal_entries)
+
+        missing_type_flags = [
+            f for f in generator.review_flags if f.status == ReviewStatus.MISSING_TYPE
+        ]
+        assert len(missing_type_flags) == 1
+        assert missing_type_flags[0].entry_id == "JE-MISSING-TYPE"
+        assert missing_type_flags[0].severity == "error"
+
     def test_flag_validation_errors(
         self, sample_journal_entries, sample_ledger_entries
     ):

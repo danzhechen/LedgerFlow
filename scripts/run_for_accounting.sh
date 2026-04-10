@@ -14,7 +14,7 @@ cd "$BASE"
 
 echo ""
 echo "======================================================"
-echo "  Veritas 自动记账 — 生成 2020/2021/2022/2024 报表"
+echo "  Veritas 自动记账 — 一键生成年度报表"
 echo "======================================================"
 echo ""
 
@@ -37,20 +37,21 @@ else
 fi
 
 # ── Run pipeline ──────────────────────────────────────────
-JOURNAL="examples/journal_entry_2020_2024.xlsx"
-RULES="账目分类明细.xlsx"
+JOURNAL="${VERITAS_JOURNAL_FILE:-examples/journal_entry_2020_2024.xlsx}"
+RULES="${VERITAS_RULES_FILE:-账目分类明细.xlsx}"
+OUT_DIR="${VERITAS_OUTPUT_DIR:-output}"
 
 echo ""
 echo "输入文件：$JOURNAL"
 echo "规则文件：$RULES"
+echo "输出目录：$OUT_DIR"
 echo ""
 
 python3 scripts/process_multi_sheet.py \
     -i "$JOURNAL" \
     -r "$RULES" \
     -a "$RULES" \
-    -o output \
-    -s 2020 -s 2021 -s 2022 -s 2024 \
+    -o "$OUT_DIR" \
     --validation-level lenient
 
 echo ""
@@ -59,10 +60,7 @@ echo "  报表生成完成！"
 echo "======================================================"
 echo ""
 echo "  请打开以下文件查看结果："
-echo "    output/2020/ledger_output.xlsx"
-echo "    output/2021/ledger_output.xlsx"
-echo "    output/2022/ledger_output.xlsx"
-echo "    output/2024/ledger_output.xlsx"
+echo "    $OUT_DIR/<年份>/ledger_output.xlsx"
 echo ""
 echo "  每个文件中的「Quarterly Report」工作表"
 echo "  可与人工账本季度数字对照。"

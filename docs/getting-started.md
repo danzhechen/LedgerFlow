@@ -99,8 +99,8 @@ This will:
 1. Read your journal entries
 2. Apply mapping rules
 3. Generate ledger output
-4. Create error reports
-5. Export audit trail
+4. Flag entries needing review (missing type, unmatched rules, year mismatch)
+5. Save the unified report to `ledger_output.xlsx`
 
 ### What You'll See
 
@@ -113,11 +113,8 @@ This will:
    ✓ Input validation passed
 🔄 Applying mapping rules and transforming entries...
    ✓ Generated 1250 ledger entries
-📊 Generating reports...
-   ✓ Generated ledger output: ./output/ledger_output.xlsx
-   ✓ Generated quarterly report: ./output/quarterly_report.xlsx
-   ✓ Generated error report: ./output/error_report.xlsx
-   ✓ Exported audit trail: ./output/audit_trail.xlsx
+📊 Generating report...
+   ✓ Generated report: ./output/ledger_output.xlsx
 
 ✅ Processing complete!
 📁 Output files saved to: /path/to/output
@@ -138,20 +135,19 @@ Ensure your journal entries Excel file has the correct format:
 veritas-accounting process --input your_journal.xlsx --rules your_rules.xlsx
 ```
 
-### 3. Review Error Report
+### 3. Review the Unified Report
 
-Check the error report Excel file:
-- Open `error_report.xlsx` in Excel
-- Review the "Summary" sheet for overview
-- Check "Errors" sheet for any issues
-- Review "Transformations" sheet to see what happened
+Open `ledger_output.xlsx` in Excel and check these sheets:
+- **Ledger Output** — all transformed entries
+- **Account Summary** — totals by account
+- **Quarterly Report** — quarter-by-quarter breakdown
+- **Flagged Entries** — entries needing attention (MISSING_TYPE, NO_MATCH, year mismatch)
+- **Audit Trail** — full traceability log
 
-### 4. Use Output Files
+### 4. Output File Summary
 
-- **ledger_output.xlsx** - Your transformed ledger entries
-- **quarterly_report.xlsx** - Quarterly aggregation summaries
-- **error_report.xlsx** - Complete error and transformation log
-- **audit_trail.xlsx** - Full audit trail for compliance
+All output is combined into a single workbook:
+- **`output/<year>/ledger_output.xlsx`** — unified report (分类账 + 审查标记 + 审计轨迹)
 
 ## Next Steps
 
@@ -205,7 +201,7 @@ Now that you've completed your first run:
 
 - **Documentation:** See `docs/` folder for complete guides
 - **Examples:** Check `examples/` folder for sample files
-- **Error Reports:** Always check error_report.xlsx for detailed information
+- **审查报告:** 打开 `ledger_output.xlsx` → "Flagged Entries" 工作表
 - **CLI Help:** Run `veritas-accounting --help` or `veritas-accounting process --help`
 
 ## Quick Reference

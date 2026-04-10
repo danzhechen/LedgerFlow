@@ -213,6 +213,7 @@ notes/
 personal/
 *.scratch
 *.notes
+progress.md
 
 # Internal development artifacts (outdated/development-only)
 EPIC_VALIDATION_REPORT.md

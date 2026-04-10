@@ -227,6 +227,7 @@ class AppConfig(BaseModel):
         output_dir: Optional[str] = None,
         validation_level: Optional[str] = None,
         auto_fix_enabled: Optional[bool] = None,
+        sheet_name: Optional[str] = None,
     ) -> "AppConfig":
         """
         Merge CLI arguments into configuration (CLI args override config).
@@ -257,6 +258,8 @@ class AppConfig(BaseModel):
             config_dict["validation"]["level"] = validation_level
         if auto_fix_enabled is not None:
             config_dict["validation"]["auto_fix_enabled"] = auto_fix_enabled
+        if sheet_name:
+            config_dict["sheet_name"] = sheet_name
 
         return AppConfig(**config_dict)
 

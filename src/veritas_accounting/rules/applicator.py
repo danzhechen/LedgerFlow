@@ -231,6 +231,60 @@ class RuleApplicator:
         """
         ledger_entries: list[LedgerEntry] = []
 
+        # Special-case: 余利宝 internal transfers should not hit investment income.
+        # Examples reported by users:
+        # - “余利宝-基金赎回，转账到支付宝”
+        # - “余利宝自动转入”
+        # These are asset-internal movements, so we record them as Bank DR + Bank CR (net 0).
+        desc = (entry.description or "").strip()
+        if "余利宝-基金赎回" in desc or "余利宝自动转入" in desc:
+            from decimal import Decimal
+
+            base_amount = abs(Decimal(entry.amount))
+            quarter = self._get_quarter(entry.date)
+            entry_year = entry.date.year
+
+            bank_code = "1100"
+            bank_path = "银行存款"
+            if account_hierarchy:
+                acc = account_hierarchy.get_account(bank_code) or account_hierarchy.get_account_by_name(
+                    bank_code
+                )
+                if acc is None:
+                    acc = account_hierarchy.get_account_by_name("银行存款")
+                if acc is not None:
+                    bank_code = acc.code
+                    bank_path = acc.full_path
+
+            rule_id = "AUTO_INTERNAL_TRANSFER"
+            dr_entry = LedgerEntry(
+                entry_id=f"LE-{entry.entry_id}-{rule_id}-DR",
+                account_code=bank_code,
+                account_path=bank_path,
+                amount=base_amount,
+                date=entry.date,
+                description=entry.description,
+                source_entry_id=entry.entry_id,
+                rule_applied=rule_id,
+                quarter=quarter,
+                year=entry_year,
+                ledger_type="DR",
+            )
+            cr_entry = LedgerEntry(
+                entry_id=f"LE-{entry.entry_id}-{rule_id}-CR",
+                account_code=bank_code,
+                account_path=bank_path,
+                amount=base_amount,
+                date=entry.date,
+                description=entry.description,
+                source_entry_id=entry.entry_id,
+                rule_applied=rule_id,
+                quarter=quarter,
+                year=entry_year,
+                ledger_type="CR",
+            )
+            return [dr_entry, cr_entry]
+
         # Separate CR and DR rules
         cr_rule = None
         dr_rule = None

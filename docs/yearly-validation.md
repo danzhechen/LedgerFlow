@@ -46,11 +46,11 @@ python scripts/validate_yearly_against_reference.py \
   --rules 账目分类明细_ledger_rules.xlsx \
   --account-hierarchy 账目分类明细.xlsx \
   --output ./output \
-  --reference-2020 "/Users/JerryChen/Downloads/2020Veritas China Account book.xlsx" \
-  --reference-2021 "/Users/JerryChen/Downloads/2021Veritas China Account book.xlsx" \
-  --reference-2022 "/Users/JerryChen/Downloads/2022Veritas China Account book.xlsx" \
-  --reference-2023 "/Users/JerryChen/Downloads/2023Veritas China Account book.xlsx" \
-  --reference-2024 "/Users/JerryChen/Downloads/2024Veritas China Account book (1).xlsx"
+  --reference-2020 "/path/to/BOOKS/2020Veritas China Account book.xlsx" \
+  --reference-2021 "/path/to/BOOKS/2021Veritas China Account book.xlsx" \
+  --reference-2022 "/path/to/BOOKS/2022Veritas China Account book.xlsx" \
+  --reference-2023 "/path/to/BOOKS/2023Veritas China Account book.xlsx" \
+  --reference-2024 "/path/to/BOOKS/2024Veritas China Account book.xlsx"
 ```
 
 Or put all reference files in one directory and use:
@@ -129,7 +129,7 @@ When we **pay other people back** 押金 (e.g. **OL-d** = deposit refund), 账�
   If `REFERENCE_2024` is set and points to the 2024 account book file, this test runs the pipeline for 2024 and compares yearly numbers:
 
   ```bash
-  REFERENCE_2024="/Users/JerryChen/Downloads/2024Veritas China Account book (1).xlsx" \
+  REFERENCE_2024="/path/to/BOOKS/2024Veritas China Account book.xlsx" \
   pytest tests/integration/test_yearly_validation.py::test_yearly_validation_against_reference_if_provided -v
   ```
 
@@ -175,7 +175,7 @@ From the project root, with reference files in e.g. `~/Downloads/`:
   --rules 账目分类明细_ledger_rules.xlsx \
   --account-hierarchy 账目分类明细.xlsx \
   --output ./output \
-  --reference-dir "/Users/JerryChen/Downloads"
+  --reference-dir "/path/to/BOOKS"
 ```
 
 This will:
@@ -217,7 +217,7 @@ The script only prints the **first 15** differences per year. To see **all** of 
   --rules 账目分类明细_ledger_rules.xlsx \
   --account-hierarchy 账目分类明细.xlsx \
   --output ./output \
-  --reference-dir "/Users/JerryChen/Downloads" \
+  --reference-dir "/path/to/BOOKS" \
   2>&1 | tee validation_report.txt
 ```
 

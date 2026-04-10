@@ -2,13 +2,18 @@
 
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from datetime import datetime
+from decimal import Decimal
+import tempfile
 
 import pytest
 import yaml
+from openpyxl import Workbook
 
 from veritas_accounting.cli.error_formatter import CLIErrorFormatter
 from veritas_accounting.config.settings import AppConfig, InputConfig, OutputConfig
 from veritas_accounting.validation.error_detector import DetectedError, ERROR_TYPE_DATA, SEVERITY_ERROR
+from veritas_accounting.cli.processor import ProcessingPipeline
 
 
 @pytest.fixture
@@ -71,10 +76,12 @@ class TestAppConfig:
         merged = config.merge_with_cli_args(
             journal_file="cli.xlsx",
             output_dir="./cli_output",
+            sheet_name="2022",
         )
 
         assert merged.input.journal_file == "cli.xlsx"
         assert merged.output.directory == "./cli_output"
+        assert merged.sheet_name == "2022"
 
     def test_validate_paths(self):
         """Test path validation."""
@@ -163,6 +170,101 @@ class TestCLIErrorFormatter:
         hint = formatter._get_quick_fix_hint(sample_error)
         # Hint may or may not be present depending on error message
         assert hint is None or isinstance(hint, str)
+
+
+class TestSheetYearMismatchGuard:
+    """Regression tests to prevent cross-year contamination within a year-named sheet."""
+
+    def test_strict_mode_fails_on_year_mismatch(self) -> None:
+        with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
+            tmp_path = Path(tmp.name)
+
+        try:
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "2022"
+            ws["A1"] = "entry_id"
+            ws["B1"] = "year"
+            ws["C1"] = "description"
+            ws["D1"] = "old_type"
+            ws["E1"] = "amount"
+            ws["F1"] = "date"
+
+            # This row lives in sheet "2022" but has a 2023 date.
+            ws["A2"] = "JE-MISDATED"
+            ws["B2"] = 2022
+            ws["C2"] = "Misdated entry"
+            ws["D2"] = "OL"
+            ws["E2"] = float(Decimal("100"))
+            ws["F2"] = datetime(2023, 1, 1).strftime("%Y-%m-%d")
+
+            wb.save(tmp_path)
+            wb.close()
+
+            config = AppConfig(
+                input=InputConfig(journal_file=str(tmp_path)),
+                sheet_name="2022",
+            )
+            config.validation.level = "strict"
+            pipeline = ProcessingPipeline(config)
+            entries, errors = pipeline._read_journal_entries()
+
+            assert entries == []
+            assert errors
+            assert "工作表“2022”" in errors[0]
+            assert "!= 2022" in errors[0]
+        finally:
+            if tmp_path.exists():
+                tmp_path.unlink()
+
+    def test_lenient_mode_drops_mismatched_rows(self) -> None:
+        with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
+            tmp_path = Path(tmp.name)
+
+        try:
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "2022"
+            ws["A1"] = "entry_id"
+            ws["B1"] = "year"
+            ws["C1"] = "description"
+            ws["D1"] = "old_type"
+            ws["E1"] = "amount"
+            ws["F1"] = "date"
+
+            # Good 2022 row
+            ws["A2"] = "JE-OK"
+            ws["B2"] = 2022
+            ws["C2"] = "OK entry"
+            ws["D2"] = "OL"
+            ws["E2"] = 100.0
+            ws["F2"] = "2022-12-31"
+
+            # Misdated 2023 row
+            ws["A3"] = "JE-MISDATED"
+            ws["B3"] = 2022
+            ws["C3"] = "Misdated entry"
+            ws["D3"] = "OL"
+            ws["E3"] = 200.0
+            ws["F3"] = "2023-01-01"
+
+            wb.save(tmp_path)
+            wb.close()
+
+            config = AppConfig(
+                input=InputConfig(journal_file=str(tmp_path)),
+                sheet_name="2022",
+            )
+            config.validation.level = "lenient"
+            pipeline = ProcessingPipeline(config)
+            entries, errors = pipeline._read_journal_entries()
+
+            assert len(entries) == 1
+            assert entries[0].entry_id == "JE-OK"
+            assert any("工作表“2022”中发现" in e for e in errors)
+        finally:
+            if tmp_path.exists():
+                tmp_path.unlink()
 
 
 
