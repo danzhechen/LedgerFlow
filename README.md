@@ -107,7 +107,6 @@ veritas-accounting process \
 |------|------|
 | [docs/如何运行-how-to-run.md](docs/如何运行-how-to-run.md) | 安装、目录约定、常见问题（给会计） |
 | [docs/accounting-verification.md](docs/accounting-verification.md) | 规则核对、已知数据问题 |
-| `progress.md` | 维护用「踩坑与变更记录」（若存在；默认可能被 `.gitignore` 忽略，仅本地） |
 
 ---
 
