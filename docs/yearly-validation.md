@@ -157,9 +157,8 @@ After the pipeline runs, the **final result** for each year is a single Excel wo
 
 Each workbook has these sheets:
 
-- **Ledger Entries** – Every transformed entry (DR/CR, signed amount, account).
+- **Journal Entry Categorization** – Every transformed line (DR/CR, signed amount, account), sorted by date / quarter / source entry ID prefix (A, I, B, others).
 - **Account Summary (by Year)** – Totals by year (this is what we compare to the reference).
-- **Account Summary (by Quarter)** – Totals by quarter.
 - **Quarterly Report** – Quarterly breakdown.
 - **Audit & Review** – Audit trail and review info (including entries with no matching rule).
 

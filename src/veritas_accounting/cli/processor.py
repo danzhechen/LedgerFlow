@@ -21,6 +21,7 @@ from veritas_accounting.validation.error_detector import ErrorDetector
 from veritas_accounting.validation.input_validator import JournalEntryValidator
 from veritas_accounting.validation.pipeline import InputValidationPipeline
 from veritas_accounting.utils.exceptions import ExcelIOError, TransformationError
+from veritas_accounting.utils.skip_filters import filter_skipped_journal_entries
 
 
 class ProcessingPipeline:
@@ -99,6 +100,15 @@ class ProcessingPipeline:
             # uses them to suggest/auto-apply types before rule application.
             journal_entries = self._run_type_inference(journal_entries, rules)
 
+            # Skip zero-amount rows and specific 余利宝 internal-transfer descriptions (omit from output).
+            before_skip = len(journal_entries)
+            journal_entries = filter_skipped_journal_entries(journal_entries)
+            skipped_count = before_skip - len(journal_entries)
+            if skipped_count:
+                click.echo(
+                    f"   ✓ 已跳过 {skipped_count} 条（金额为 0，或 余利宝-基金赎回 / 余利宝自动转入 内部划转不入账）"
+                )
+
             # Step 3: Read account hierarchy (optional)
             account_hierarchy = None
             if self.config.input.account_hierarchy_file:
@@ -164,7 +174,7 @@ class ProcessingPipeline:
             if unmatched_entries:
                 click.echo(f"   ⚠️  {len(unmatched_entries)} entries had no matching rules")
 
-            # Step 6: Generate unified report (single workbook: Ledger, Account Summary, Quarterly Report, Audit & Review)
+            # Step 6: Unified workbook — Journal Entry Categorization, Account Summary (by Year), Quarterly Report, Audit & Review
             click.echo("📊 Generating report...")
             output_dir = Path(self.config.output.directory)
             output_dir.mkdir(parents=True, exist_ok=True)
@@ -183,6 +193,7 @@ class ProcessingPipeline:
             results["success"] = True
             results["statistics"] = {
                 "journal_entries": len(journal_entries),
+                "journal_entries_skipped": skipped_count,
                 "ledger_entries": len(ledger_entries),
                 "rules_applied": len(rules),
                 "unmatched_entries": len(unmatched_entries),

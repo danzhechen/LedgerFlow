@@ -1,4 +1,4 @@
-"""Unified report generation: single workbook with Ledger, Account Summary, Quarterly Report, and Audit & Review."""
+"""Unified report: Journal Entry Categorization, Account Summary (by Year), Quarterly Report, Audit & Review."""
 
 from collections import defaultdict
 from decimal import Decimal
@@ -25,11 +25,10 @@ from veritas_accounting.validation.error_detector import ErrorDetector
 class UnifiedReportGenerator:
     """
     Generates a single Excel workbook containing:
-    1. Ledger Entries (detail for eyeball/debug)
+    1. Journal Entry Categorization (detail rows, date/quarter/source-ID sorted)
     2. Account Summary (by Year) - CR, DR, Net per account per year
-    3. Account Summary (by Quarter) - CR, DR, Net per account per quarter per year
-    4. Quarterly Report - quarterly breakdown
-    5. Audit & Review - summary stats, unmatched entries, and transformation overview
+    3. Quarterly Report - quarterly breakdown
+    4. Audit & Review - summary stats, unmatched entries, and transformation overview
     """
 
     COLOR_HEADER = "2C3E50"
@@ -56,22 +55,19 @@ class UnifiedReportGenerator:
         wb = Workbook()
         wb.remove(wb.active)
 
-        # 1. Ledger Entries
+        # 1. Journal Entry Categorization
         self.ledger_generator.add_ledger_entries_sheet(wb, ledger_entries, index=0)
 
         # 2. Account Summary by Year
         aggregations = self.aggregator.aggregate(ledger_entries)
         self._add_account_summary_by_year_sheet(wb, aggregations, index=1)
 
-        # 3. Account Summary by Quarter
-        self._add_account_summary_by_quarter_sheet(wb, aggregations, index=2)
+        # 3. Quarterly Report
+        self.quarterly_generator.add_quarterly_totals_sheet(wb, ledger_entries, index=2)
 
-        # 4. Quarterly Report
-        self.quarterly_generator.add_quarterly_totals_sheet(wb, ledger_entries, index=3)
-
-        # 5. Audit & Review
+        # 4. Audit & Review
         self._add_audit_review_sheet(
-            wb, audit_trail, error_detector, journal_entries, ledger_entries, index=4
+            wb, audit_trail, error_detector, journal_entries, ledger_entries, index=3
         )
 
         try:
@@ -181,68 +177,6 @@ class UnifiedReportGenerator:
                     cell.number_format = "#,##0.00"
 
         for col_letter, width in [("A", 8), ("B", 12), ("C", 15), ("D", 40), ("E", 16), ("F", 16), ("G", 16), ("H", 12)]:
-            ws.column_dimensions[col_letter].width = width
-        ws.freeze_panes = "A4"
-        ws.auto_filter.ref = ws.dimensions
-
-    def _add_account_summary_by_quarter_sheet(
-        self,
-        wb: Workbook,
-        aggregations: list[QuarterlyAggregation],
-        index: int,
-    ) -> None:
-        """One row per account per quarter per year: Year, Quarter, Ledger ID, Account Code, Account Name, CR, DR, Net, Entry Count."""
-        ws = wb.create_sheet("Account Summary (by Quarter)", index)
-        ws["A1"] = "Account Summary by Quarter"
-        ws["A1"].font = Font(bold=True, size=14)
-        ws.merge_cells("A1:I1")
-
-        headers = [
-            "Year",
-            "Quarter",
-            "Ledger ID",
-            "Account Code",
-            "Account Name",
-            "CR Amount",
-            "DR Amount",
-            "Net Amount",
-            "Entry Count",
-        ]
-        for col, h in enumerate(headers, start=1):
-            c = ws.cell(row=3, column=col, value=h)
-            c.font = Font(bold=True, color="FFFFFF")
-            c.fill = PatternFill(
-                start_color=self.COLOR_HEADER,
-                end_color=self.COLOR_HEADER,
-                fill_type="solid",
-            )
-        row = 4
-
-        for agg in sorted(aggregations, key=lambda a: (a.year, a.quarter, a.account_code)):
-            ledger_id = agg.account_code
-            account_name = agg.account_path
-            if self.account_hierarchy:
-                acc = self.account_hierarchy.get_account(agg.account_code)
-                if not acc:
-                    acc = self.account_hierarchy.get_account_by_name(agg.account_code)
-                if acc:
-                    account_name = acc.name
-                    ledger_id = acc.code
-
-            ws.cell(row=row, column=1, value=agg.year)
-            ws.cell(row=row, column=2, value=agg.quarter)
-            ws.cell(row=row, column=3, value=ledger_id)
-            ws.cell(row=row, column=4, value=agg.account_code)
-            ws.cell(row=row, column=5, value=account_name)
-            ws.cell(row=row, column=6, value=float(agg.cr_amount))
-            ws.cell(row=row, column=7, value=float(agg.dr_amount))
-            ws.cell(row=row, column=8, value=float(agg.total_amount))
-            ws.cell(row=row, column=9, value=agg.entry_count)
-            for col in [6, 7, 8]:
-                ws.cell(row=row, column=col).number_format = "#,##0.00"
-            row += 1
-
-        for col_letter, width in [("A", 8), ("B", 8), ("C", 12), ("D", 15), ("E", 40), ("F", 16), ("G", 16), ("H", 16), ("I", 12)]:
             ws.column_dimensions[col_letter].width = width
         ws.freeze_panes = "A4"
         ws.auto_filter.ref = ws.dimensions

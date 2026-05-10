@@ -40,7 +40,7 @@ veritas-accounting process \
 Check the `./output` directory for:
 - `ledger_output.xlsx` — 统一报告（分类账 + 季度汇总 + 审查标记 + 审计轨迹）
 
-所有输出合并在一个工作簿中，包含多个工作表（Ledger Output、Account Summary、Quarterly Report、Flagged Entries 等）。
+所有输出合并在一个工作簿中，包含：**Journal Entry Categorization**、**Account Summary (by Year)**、**Quarterly Report**、**Audit & Review**。
 
 ---
 
@@ -115,11 +115,10 @@ After processing, your journal entries are transformed into ledger entries:
 
 | 工作表 | 内容 |
 |--------|------|
-| Ledger Output | 所有分类账分录，含账户代码和来源 |
-| Account Summary | 按账户层级汇总金额 |
+| Journal Entry Categorization | 分类账明细（按日期 / 季度 / 流水号前缀 A→I→B→其它排序） |
+| Account Summary (by Year) | 按年的科目 CR/DR/净额 |
 | Quarterly Report | 按季度汇总 |
-| Flagged Entries | 需审查的条目（NO_MATCH、MISSING_TYPE、年份错误等） |
-| Audit Trail | 完整审计轨迹（处理时间、规则应用记录） |
+| Audit & Review | 摘要与无匹配规则的日记账列表 |
 
 ---
 
@@ -141,7 +140,7 @@ veritas-accounting process \
 
 # 3. 审查结果
 # 打开 ./output/q1_2024/ledger_output.xlsx
-# 查看 "Flagged Entries" 工作表了解需人工处理的条目
+# 查看 "Audit & Review" 工作表中未匹配规则等条目
 ```
 
 ### What You'll See During Processing
@@ -304,7 +303,7 @@ LE-001: Account A1, Payment received from customer, $1000, 2024-01-15
 ## Getting Help
 
 - **CLI Help:** `veritas-accounting --help` or `veritas-accounting process --help`
-- **审查报告 / Review Report:** 打开 `ledger_output.xlsx`，查看 "Flagged Entries" 工作表
+- **审查报告 / Review Report:** 打开 `ledger_output.xlsx`，查看 **Audit & Review** 工作表（含未匹配条目）
 - **Documentation:** See `docs/` folder for complete guides
 - **Examples:** Check `examples/` folder for sample files
 

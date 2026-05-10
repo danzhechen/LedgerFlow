@@ -81,7 +81,7 @@ def test_ledger_id_lookup_in_ledger_output(real_world_hierarchy, tmp_path):
     # Read back and verify ledger IDs
     from openpyxl import load_workbook
     wb = load_workbook(output_path)
-    ws = wb["Ledger Entries"]
+    ws = wb[LedgerOutputGenerator.JOURNAL_CATEGORIZATION_SHEET]
     
     # Verify headers
     assert ws.cell(row=1, column=2).value == "Ledger ID"

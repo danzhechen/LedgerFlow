@@ -204,7 +204,7 @@ class TestLedgerOutputGenerator:
         # Read back and verify ledger ID is in output
         from openpyxl import load_workbook
         wb = load_workbook(output_path)
-        ws = wb["Ledger Entries"]
+        ws = wb[LedgerOutputGenerator.JOURNAL_CATEGORIZATION_SHEET]
         
         # Check header row
         assert ws.cell(row=1, column=2).value == "Ledger ID"
@@ -240,7 +240,7 @@ class TestLedgerOutputGenerator:
         # Read back and verify ledger ID is found by name lookup
         from openpyxl import load_workbook
         wb = load_workbook(output_path)
-        ws = wb["Ledger Entries"]
+        ws = wb[LedgerOutputGenerator.JOURNAL_CATEGORIZATION_SHEET]
         
         # Check data row - ledger ID should be "1100" (found by name lookup)
         assert ws.cell(row=2, column=2).value == "1100"

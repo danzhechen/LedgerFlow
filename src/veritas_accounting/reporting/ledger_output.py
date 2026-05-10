@@ -2,7 +2,7 @@
 
 from collections import defaultdict
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import pandas as pd
 from openpyxl import Workbook
@@ -22,6 +22,9 @@ class LedgerOutputGenerator:
     Creates professional Excel files with ledger entries organized by account
     hierarchy, proper formatting, and summary totals.
     """
+
+    # Unified-report detail sheet (journal-derived lines, sorted for review)
+    JOURNAL_CATEGORIZATION_SHEET = "Journal Entry Categorization"
 
     # Color scheme
     COLOR_HEADER = "2C3E50"  # Dark blue-gray
@@ -83,18 +86,52 @@ class LedgerOutputGenerator:
         index: int = 0,
     ) -> None:
         """
-        Add only the Ledger Entries sheet to an existing workbook.
+        Add the journal categorization detail sheet to an existing workbook.
         Used when building a unified report in a single file.
         """
-        ws = wb.create_sheet("Ledger Entries", index)
+        ws = wb.create_sheet(self.JOURNAL_CATEGORIZATION_SHEET, index)
         self._fill_ledger_entries_sheet(ws, ledger_entries)
 
     def _create_ledger_entries_sheet(
         self, wb: Workbook, ledger_entries: list[LedgerEntry]
     ) -> None:
-        """Create ledger entries sheet with hierarchical organization."""
-        ws = wb.create_sheet("Ledger Entries", 0)
+        """Create journal categorization sheet (sorted by date / quarter / source ID prefix)."""
+        ws = wb.create_sheet(self.JOURNAL_CATEGORIZATION_SHEET, 0)
         self._fill_ledger_entries_sheet(ws, ledger_entries)
+
+    @staticmethod
+    def _source_entry_prefix_rank(source_entry_id: Optional[str]) -> int:
+        """Sort order: A (支付宝等) → I (interest) → B (bank) → others (e.g. W)."""
+        if not source_entry_id:
+            return 3
+        c = str(source_entry_id).strip()[:1].upper()
+        if c == "A":
+            return 0
+        if c == "I":
+            return 1
+        if c == "B":
+            return 2
+        return 3
+
+    def _quarter_for_sort(self, entry: LedgerEntry) -> int:
+        if entry.quarter is not None:
+            return int(entry.quarter)
+        m = entry.date.month
+        return (m - 1) // 3 + 1
+
+    def _sort_for_journal_categorization(
+        self, ledger_entries: list[LedgerEntry]
+    ) -> list[LedgerEntry]:
+        return sorted(
+            ledger_entries,
+            key=lambda e: (
+                e.year,
+                self._quarter_for_sort(e),
+                e.date,
+                self._source_entry_prefix_rank(e.source_entry_id),
+                str(e.source_entry_id or ""),
+            ),
+        )
 
     def _fill_ledger_entries_sheet(
         self, ws: Any, ledger_entries: list[LedgerEntry]
@@ -133,15 +170,8 @@ class LedgerOutputGenerator:
                 bottom=Side(style="thin"),
             )
 
-        # Organize entries by account hierarchy
-        if self.account_hierarchy:
-            # Group by account code and level
-            organized_entries = self._organize_by_hierarchy(ledger_entries)
-        else:
-            # Simple sort by account code
-            organized_entries = sorted(
-                ledger_entries, key=lambda e: (e.account_code, e.date)
-            )
+        # Flat sort: year → quarter → date → source entry ID prefix (A, I, B, …) → ID
+        organized_entries = self._sort_for_journal_categorization(ledger_entries)
 
         # Write entries
         row = 2

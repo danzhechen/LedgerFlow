@@ -138,11 +138,10 @@ veritas-accounting process --input your_journal.xlsx --rules your_rules.xlsx
 ### 3. Review the Unified Report
 
 Open `ledger_output.xlsx` in Excel and check these sheets:
-- **Ledger Output** — all transformed entries
-- **Account Summary** — totals by account
+- **Journal Entry Categorization** — detail lines sorted by date / quarter / source ID prefix (A, I, B, …)
+- **Account Summary (by Year)** — totals by account and year
 - **Quarterly Report** — quarter-by-quarter breakdown
-- **Flagged Entries** — entries needing attention (MISSING_TYPE, NO_MATCH, year mismatch)
-- **Audit Trail** — full traceability log
+- **Audit & Review** — summary and unmatched journal rows (NO_MATCH, etc.)
 
 ### 4. Output File Summary
 

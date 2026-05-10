@@ -83,7 +83,7 @@ scripts\run_for_accounting.bat
 
 默认脚本会读取：
 
-- `examples/journal_entry_2020_2024.xlsx`
+- `examples/journal_entry_sample.xlsx`（合成演示数据；真实账本请用环境变量指向自己的路径）
 - `账目分类明细.xlsx`
 
 如果你要跑真实账本，推荐在项目根目录新建 `input/` 文件夹（自行创建即可），把文件放进去，然后设置环境变量覆盖默认路径：
@@ -108,7 +108,7 @@ scripts\run_for_accounting.bat
 
 ### 3.2 会自动处理哪些 sheet（避免漏跑 2023）
 
-- 如果 Excel 里存在 `2020` / `2021` / `2022` / `2023` 这种“年份命名”的 sheet，会 **只处理这些年份 sheet（按年份顺序）**。\n
+- 如果 Excel 里存在 `2020` / `2021` / `2022` / `2023` 这种“年份命名”的 sheet，会 **只处理这些年份 sheet（按年份顺序）**。
 - 如果没有年份命名的 sheet，则处理全部 sheet。
 
 ---
@@ -119,10 +119,10 @@ scripts\run_for_accounting.bat
 
 | 工作表 | 内容 |
 |--------|------|
-| **Quarterly Report** | 季度汇总（各科目按 Q1/Q2/Q3/Q4 列示） |
-| **Account Summary** | 全年科目汇总（借贷方向、净额） |
-| **Ledger** | 完整明细记录（每条流水对应的会计分录） |
-| **Audit & Review** | 无法自动分类的条目列表（含类型、摘要、金额） |
+| **Journal Entry Categorization** | 按日期 / 季度 / 流水编号前缀（A→I→B→其它）排序的明细 |
+| **Account Summary (by Year)** | 按年的科目汇总（CR / DR / 净额） |
+| **Quarterly Report** | 季度汇总 |
+| **Audit & Review** | 摘要统计与「无匹配规则」的日记账条目列表 |
 
 > **最常用的是 Quarterly Report** — 与人工账本对照时，用这个工作表比较各季度数字。
 
@@ -130,7 +130,7 @@ scripts\run_for_accounting.bat
 
 ## 五、如何放人工账本文件（用于季度对比）
 
-如果需要运行**程序报表 vs 人工账本**的对比，请将历年人工账本 Excel 放入项目根目录下的 `BOOKS/` 文件夹。\n
+如果需要运行**程序报表 vs 人工账本**的对比，请将历年人工账本 Excel 放入项目根目录下的 `BOOKS/` 文件夹。
 文件名现在支持常见下载变体（例如 `(... (1).xlsx)`），但仍建议使用下面的标准命名，便于沟通：
 
 ```
@@ -177,7 +177,7 @@ python scripts\compare_quarterly.py
 veritas-accounting/
 ├── 账目分类明细.xlsx           ← 规则文件（科目与借贷方向），由项目方维护
 ├── examples/
-│   └── journal_entry_2020_2024.xlsx  ← 流水日记账（输入）
+│   └── journal_entry_sample.xlsx     ← 演示用合成日记账（输入示例）
 ├── output/
 │   ├── 2020/ledger_output.xlsx       ← 程序生成的 2020 总账报表
 │   ├── 2021/ledger_output.xlsx       ← 2021

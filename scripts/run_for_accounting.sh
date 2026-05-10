@@ -37,7 +37,7 @@ else
 fi
 
 # ── Run pipeline ──────────────────────────────────────────
-JOURNAL="${VERITAS_JOURNAL_FILE:-examples/journal_entry_2020_2024.xlsx}"
+JOURNAL="${VERITAS_JOURNAL_FILE:-examples/journal_entry_sample.xlsx}"
 RULES="${VERITAS_RULES_FILE:-账目分类明细.xlsx}"
 OUT_DIR="${VERITAS_OUTPUT_DIR:-output}"
 

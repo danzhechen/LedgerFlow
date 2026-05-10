@@ -23,7 +23,7 @@ bash scripts/run_for_accounting.sh
 
 | 项目 | 说明 |
 |------|------|
-| **默认日记账** | `examples/journal_entry_2020_2024.xlsx` |
+| **默认日记账** | `examples/journal_entry_sample.xlsx`（合成演示数据；可用环境变量换成真实账本） |
 | **默认规则/科目表** | `账目分类明细.xlsx`（与 `--rules` / `--account-hierarchy` 常用同一文件） |
 | **默认输出** | `output/<年份>/ledger_output.xlsx`（每个处理的 sheet 对应一个子目录） |
 
@@ -32,7 +32,7 @@ bash scripts/run_for_accounting.sh
 - 若工作簿里存在名为 `2020`、`2021`、`2022`、`2023`、`2024` 等 **四位数字年份** 的 sheet，则 **只处理这些 sheet**，并按年份升序执行。
 - 若 **没有任何**「年份命名」的 sheet，则 **处理全部 sheet**（保持原有顺序）。
 
-**通用化输入（不必固定 `journal_entry_2020_2024.xlsx` 文件名）**
+**通用化输入（不必固定示例文件名）**
 
 将真实账本放在例如 `input/` 下，通过环境变量覆盖路径即可：
 
@@ -67,12 +67,14 @@ scripts\run_for_accounting.bat
 
 ### 日记账「类型 / Type」列缺失
 
-- 不再静默默认成 `OL`；会标为 **`__MISSING_TYPE__`**，在 **`ledger_output.xlsx`** 的审查相关区域（如 **Flagged Entries** / Audit & Review）中提示需 **人工补类型或补规则**。
+- 不再静默默认成 `OL`；会标为 **`__MISSING_TYPE__`**，需在 **`ledger_output.xlsx`** 的复核流程或再次导出预览中处理；实务见 **`docs/工作手册-accountant-guide.md`**。
 - 若规则条件里含有 `"关键词" in description` 形式，工具会尝试 **关键词启发式推断**（高置信度可自动填入类型，低置信度仅在备注中给出建议，供核对）。
 
-### 「余利宝-基金赎回…」「余利宝自动转入」误记投资收益
+### 「余利宝-基金赎回…」「余利宝自动转入」
 
-- 上述描述视为 **资产内部划转**，记为 **银行存款 DR + 银行存款 CR**（借贷等额，净额对投资收益无影响），避免误入投资收益。
+- 描述中含 **`余利宝-基金赎回`** 或 **`余利宝自动转入`** 的分录 **不参与入账**（在匹配规则前即跳过），避免银行存款流水噪声。**金额为 0** 的行同样跳过。
+
+其它支付宝 / 基金相关内部划转仍按 **`账目分类明细.xlsx`** 中的规则处理（通常为银行存款借贷对等）。
 
 ---
 
@@ -90,7 +92,7 @@ pip install -e .
 
 ```bash
 veritas-accounting process \
-  --input examples/journal_entry_2020_2024.xlsx \
+  --input examples/journal_entry_sample.xlsx \
   --rules 账目分类明细.xlsx \
   --account-hierarchy 账目分类明细.xlsx \
   --sheet 2022 \
@@ -107,6 +109,8 @@ veritas-accounting process \
 |------|------|
 | [docs/如何运行-how-to-run.md](docs/如何运行-how-to-run.md) | 安装、目录约定、常见问题（给会计） |
 | [docs/accounting-verification.md](docs/accounting-verification.md) | 规则核对、已知数据问题 |
+| [docs/工作手册-accountant-guide.md](docs/工作手册-accountant-guide.md) | 从 Raw Data 到出表的实操流程（财务） |
+| [docs/architecture.md](docs/architecture.md) | 模块关系与数据处理流水线（开发者） |
 
 ---
 
@@ -120,6 +124,7 @@ veritas-accounting/
 │   ├── run_for_accounting.sh      # 一键运行（macOS / Linux）
 │   ├── run_for_accounting.bat     # 一键运行（Windows）
 │   ├── process_multi_sheet.py     # 多 sheet：按策略选表、逐年输出
+│   ├── generate_examples.py      # 生成合成演示账本 journal_entry_sample.xlsx
 │   └── compare_quarterly.py       # 与人工账本季度对比（读取 BOOKS/）
 ├── docs/                          # 说明文档（中文优先）
 ├── BOOKS/                         # 人工参考账本（对比用；支持常见下载文件名变体）

@@ -55,15 +55,17 @@ def test_test_journal_new_pipeline(tmp_path):
     from openpyxl import load_workbook
 
     wb = load_workbook(ledger_path)
-    # Unified report sheets: Ledger Entries, Account Summary (by Year), Account Summary (by Quarter), Quarterly Report, Audit & Review
-    assert "Ledger Entries" in wb.sheetnames, f"Ledger Entries sheet missing. Sheets: {wb.sheetnames}"
-    ws = wb["Ledger Entries"]
+    # Unified report: Journal Entry Categorization, Account Summary (by Year), Quarterly Report, Audit & Review
+    assert "Journal Entry Categorization" in wb.sheetnames, (
+        f"Journal Entry Categorization sheet missing. Sheets: {wb.sheetnames}"
+    )
+    ws = wb["Journal Entry Categorization"]
     
     # Verify header has "Ledger ID" column
     assert ws.cell(row=1, column=2).value == "Ledger ID", f"Ledger ID column missing in header. Found: {[ws.cell(row=1, col=i).value for i in range(1, 6)]}"
     
     # Debug: Print first few rows to see what's actually there
-    print(f"\nDEBUG: Ledger Entries sheet - Max row: {ws.max_row}")
+    print(f"\nDEBUG: Journal Entry Categorization sheet - Max row: {ws.max_row}")
     print(f"Headers: {[ws.cell(row=1, column=i).value for i in range(1, 6)]}")
     for row in range(2, min(ws.max_row + 1, 5)):
         row_data = [ws.cell(row=row, column=i).value for i in range(1, 6)]

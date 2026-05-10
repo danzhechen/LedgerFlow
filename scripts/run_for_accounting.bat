@@ -39,7 +39,7 @@ echo.
 
 REM Allow overriding file paths via environment variables
 set "JOURNAL=%VERITAS_JOURNAL_FILE%"
-if "%JOURNAL%"=="" set "JOURNAL=examples\journal_entry_2020_2024.xlsx"
+if "%JOURNAL%"=="" set "JOURNAL=examples\journal_entry_sample.xlsx"
 set "RULES=%VERITAS_RULES_FILE%"
 if "%RULES%"=="" set "RULES=账目分类明细.xlsx"
 set "OUT_DIR=%VERITAS_OUTPUT_DIR%"
