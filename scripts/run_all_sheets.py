@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Process all sheets from journal_entry_2020_2024.xlsx
+Process all sheets from a multi-year journal workbook (default: examples/journal_entry_sample.xlsx).
 
 Usage:
-    python3 scripts/run_all_sheets.py [--rules RULES_FILE] [--account-hierarchy HIERARCHY_FILE]
+    python3 scripts/run_all_sheets.py [--journal PATH] [--rules RULES_FILE] [--account-hierarchy HIERARCHY_FILE]
 
 This will process each sheet (2020, 2021, 2022, 2023, 2024) separately
 and save outputs to separate directories:
@@ -22,8 +22,8 @@ def main():
     """Process all sheets using the CLI command."""
     script_dir = Path(__file__).parent.parent
     
-    # Excel file with 5 sheets
-    journal_file = script_dir / "examples" / "journal_entry_2020_2024.xlsx"
+    # Excel file with year-named sheets (synthetic sample by default)
+    journal_file = script_dir / "examples" / "journal_entry_sample.xlsx"
     
     if not journal_file.exists():
         print(f"❌ Error: Journal file not found: {journal_file}")
@@ -35,7 +35,9 @@ def main():
     
     if len(sys.argv) > 1:
         for i, arg in enumerate(sys.argv[1:], 1):
-            if arg == "--rules" and i + 1 < len(sys.argv):
+            if arg == "--journal" and i + 1 < len(sys.argv):
+                journal_file = Path(sys.argv[i + 1]).expanduser().resolve()
+            elif arg == "--rules" and i + 1 < len(sys.argv):
                 rules_file = sys.argv[i + 1]
             elif arg == "--account-hierarchy" and i + 1 < len(sys.argv):
                 account_hierarchy = sys.argv[i + 1]
@@ -53,7 +55,7 @@ def main():
     sheets = ["2020", "2021", "2022", "2023", "2024"]
     
     print("=" * 60)
-    print("Processing All Sheets from journal_entry_2020_2024.xlsx")
+    print(f"Processing All Sheets from {journal_file.name}")
     print("=" * 60)
     print(f"Journal file: {journal_file}")
     print(f"Rules file: {rules_file}")

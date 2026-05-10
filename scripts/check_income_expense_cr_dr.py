@@ -26,7 +26,7 @@ from veritas_accounting.models.account_loader import AccountHierarchyLoader
 from veritas_accounting.transformation.aggregator import QuarterlyAggregator
 @click.command()
 @click.option("--sheet", default="2023", help="Journal sheet name (e.g. 2023, 2024)")
-@click.option("--journal", "-i", type=click.Path(exists=True), default="examples/journal_entry_2020_2024.xlsx")
+@click.option("--journal", "-i", type=click.Path(exists=True), default="examples/journal_entry_sample.xlsx")
 @click.option("--rules", "-r", type=click.Path(exists=True), default="账目分类明细_ledger_rules.xlsx")
 @click.option("--hierarchy", "-a", type=click.Path(exists=True), default="账目分类明细.xlsx")
 def main(sheet: str, journal: str, rules: str, hierarchy: str) -> None:

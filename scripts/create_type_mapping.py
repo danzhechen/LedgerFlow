@@ -54,11 +54,11 @@ def analyze_type_mapping(journal_file):
     return type_mapping
 
 if __name__ == '__main__':
-    journal_file = Path('examples/journal_2024_transformed.xlsx')
+    journal_file = Path('examples/journal_entry_sample.xlsx')
     
     if not journal_file.exists():
         print(f"❌ File not found: {journal_file}")
-        print("   Run transform_journal_2024.py first!")
+        print("   Use examples/journal_entry_sample.xlsx or pass a path to a transformed journal (.xlsx).")
         exit(1)
     
     mapping = analyze_type_mapping(journal_file)

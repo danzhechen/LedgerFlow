@@ -1,4 +1,4 @@
-"""Integration test for examples/test_journal_new.xlsx pipeline."""
+"""Integration test: full pipeline on synthetic examples/journal_entry_sample.xlsx."""
 
 from pathlib import Path
 
@@ -7,17 +7,17 @@ from veritas_accounting.config.settings import AppConfig, InputConfig, OutputCon
 import pytest
 
 
-def test_test_journal_new_pipeline(tmp_path):
+def test_sample_journal_full_pipeline(tmp_path):
     """
-    Run the full processing pipeline on examples/test_journal_new.xlsx.
+    Run the full processing pipeline on examples/journal_entry_sample.xlsx.
 
-    Uses: journal_file=examples/test_journal_new.xlsx, rules=账目分类明细_ledger_rules.xlsx,
+    Uses: journal_file=examples/journal_entry_sample.xlsx, rules=账目分类明细_ledger_rules.xlsx,
     account_hierarchy=账目分类明细.xlsx.
     """
 
     project_root = Path(__file__).resolve().parents[2]
 
-    journal_file = project_root / "examples" / "test_journal_new.xlsx"
+    journal_file = project_root / "examples" / "journal_entry_sample.xlsx"
     rules_file = project_root / "账目分类明细_ledger_rules.xlsx"
     hierarchy_file = project_root / "账目分类明细.xlsx"
     output_dir = tmp_path  # isolated output per test run

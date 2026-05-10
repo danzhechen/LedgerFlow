@@ -146,7 +146,7 @@ cython_debug/
 # Project-specific
 logs/
 *.xlsx
-!examples/*.xlsx
+!examples/journal_entry_sample.xlsx
 !tests/fixtures/*.xlsx
 !账目分类明细.xlsx
 output/

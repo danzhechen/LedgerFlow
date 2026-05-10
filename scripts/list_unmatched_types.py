@@ -6,7 +6,7 @@ Used to: (1) add rules where possible (mutually exclusive), (2) document
 unmatched types for accounting verification.
 
 Usage (from veritas-accounting):
-  python3 scripts/list_unmatched_types.py -i examples/journal_entry_2020_2024.xlsx \\
+  python3 scripts/list_unmatched_types.py -i examples/journal_entry_sample.xlsx \\
     -r 账目分类明细.xlsx -a 账目分类明细.xlsx -s 2020 -s 2021 -s 2022 -s 2024
 
 Writes: docs/unmatched-types-for-verification.txt (and prints to stdout).

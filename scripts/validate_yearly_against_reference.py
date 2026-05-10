@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Run the pipeline on journal_entry_2020_2024.xlsx (per-year sheets) and validate
+Run the pipeline on a multi-sheet journal workbook (e.g. per-year sheets 2020–2024) and validate
 yearly report numbers against reference Veritas China Account book files.
 
 Usage:
   # Reference files in a directory (named by year: 2020.xlsx, 2021.xlsx, ... or full names)
   python scripts/validate_yearly_against_reference.py \\
-    --journal examples/journal_entry_2020_2024.xlsx \\
+    --journal examples/journal_entry_sample.xlsx \\
     --rules 账目分类明细_ledger_rules.xlsx \\
     --account-hierarchy 账目分类明细.xlsx \\
     --output ./output \\

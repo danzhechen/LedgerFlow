@@ -4,7 +4,7 @@ This describes how to validate that the pipeline output matches your existing **
 
 ## Inputs
 
-- **Journal:** `examples/journal_entry_2020_2024.xlsx` (sheets: 2020, 2021, 2022, 2023, 2024)
+- **Journal:** `examples/journal_entry_sample.xlsx` (synthetic demo; sheets 2020–2024). Keep real journals **local** — they are gitignored and must not be committed.
 - **Rules:** e.g. `账目分类明细_ledger_rules.xlsx`
 - **Account hierarchy:** e.g. `账目分类明细.xlsx`
 - **Reference files (expected results):**
@@ -28,7 +28,7 @@ From the project root:
 
 ```bash
 python scripts/process_multi_sheet.py \
-  --input examples/journal_entry_2020_2024.xlsx \
+  --input examples/journal_entry_sample.xlsx \
   --rules 账目分类明细_ledger_rules.xlsx \
   --account-hierarchy 账目分类明细.xlsx \
   --output ./output
@@ -42,7 +42,7 @@ Point the script at your reference files (Downloads or a copy in the repo):
 
 ```bash
 python scripts/validate_yearly_against_reference.py \
-  --journal examples/journal_entry_2020_2024.xlsx \
+  --journal examples/journal_entry_sample.xlsx \
   --rules 账目分类明细_ledger_rules.xlsx \
   --account-hierarchy 账目分类明细.xlsx \
   --output ./output \
@@ -122,7 +122,7 @@ When we **pay other people back** 押金 (e.g. **OL-d** = deposit refund), 账�
   Run the integration test that processes sheet “2024” and checks that the report contains an “Account Summary (by Year)” with 2024 data:
 
   ```bash
-  pytest tests/integration/test_yearly_validation.py::test_journal_2020_2024_sheet_2024_pipeline -v
+  pytest tests/integration/test_yearly_validation.py::test_sample_journal_sheet_2024_pipeline -v
   ```
 
 - **With reference (optional):**  
@@ -170,7 +170,7 @@ From the project root, with reference files in e.g. `~/Downloads/`:
 
 ```bash
 .venv/bin/python scripts/validate_yearly_against_reference.py \
-  --journal examples/journal_entry_2020_2024.xlsx \
+  --journal examples/journal_entry_sample.xlsx \
   --rules 账目分类明细_ledger_rules.xlsx \
   --account-hierarchy 账目分类明细.xlsx \
   --output ./output \
@@ -212,7 +212,7 @@ The script only prints the **first 15** differences per year. To see **all** of 
 
 ```bash
 .venv/bin/python scripts/validate_yearly_against_reference.py \
-  --journal examples/journal_entry_2020_2024.xlsx \
+  --journal examples/journal_entry_sample.xlsx \
   --rules 账目分类明细_ledger_rules.xlsx \
   --account-hierarchy 账目分类明细.xlsx \
   --output ./output \

@@ -162,7 +162,11 @@ def transform_journal_2024(input_path, output_path=None):
     return transformed, output_path
 
 if __name__ == '__main__':
-    input_file = Path('examples/journal_2024.xlsx')
+    if len(sys.argv) < 2:
+        print("Usage: python scripts/transform_journal_2024.py <path/to/raw_journal_2024.xlsx>")
+        print("  (Raw-format workbook is not shipped in the repo; keep yours local.)")
+        sys.exit(1)
+    input_file = Path(sys.argv[1])
     
     if not input_file.exists():
         print(f"❌ File not found: {input_file}")

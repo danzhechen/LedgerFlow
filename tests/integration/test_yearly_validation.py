@@ -1,5 +1,5 @@
 """
-Integration test: run pipeline on journal_entry_2020_2024.xlsx (one sheet) and optionally
+Integration test: run pipeline on examples/journal_entry_sample.xlsx (one sheet) and optionally
 validate yearly report numbers against reference Veritas China Account book files.
 
 To run full validation against reference books, set environment variables or pass paths:
@@ -20,13 +20,13 @@ def _project_root() -> Path:
 
 
 @pytest.mark.integration
-def test_journal_2020_2024_sheet_2024_pipeline(tmp_path: Path) -> None:
+def test_sample_journal_sheet_2024_pipeline(tmp_path: Path) -> None:
     """
-    Run pipeline on journal_entry_2020_2024.xlsx, sheet "2024".
+    Run pipeline on examples/journal_entry_sample.xlsx, sheet "2024".
     Verifies unified report is produced and Account Summary (by Year) has data for 2024.
     """
     root = _project_root()
-    journal_file = root / "examples" / "journal_entry_2020_2024.xlsx"
+    journal_file = root / "examples" / "journal_entry_sample.xlsx"
     rules_file = root / "账目分类明细_ledger_rules.xlsx"
     hierarchy_file = root / "账目分类明细.xlsx"
 
@@ -95,7 +95,7 @@ def test_yearly_validation_against_reference_if_provided(tmp_path: Path) -> None
         pytest.skip("REFERENCE_2024 not set or file not found (optional validation)")
 
     root = _project_root()
-    journal_file = root / "examples" / "journal_entry_2020_2024.xlsx"
+    journal_file = root / "examples" / "journal_entry_sample.xlsx"
     rules_file = root / "账目分类明细_ledger_rules.xlsx"
     hierarchy_file = root / "账目分类明细.xlsx"
     if not all(p.exists() for p in (journal_file, rules_file, hierarchy_file)):

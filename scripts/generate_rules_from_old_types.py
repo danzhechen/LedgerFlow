@@ -233,7 +233,7 @@ if __name__ == '__main__':
         rules_df, output_file = generate_rules_from_old_types(input_file, hierarchy_file=hierarchy_file)
         print(f"\n🎉 Success! Rules saved to: {output_file}")
         print(f"\n💡 Now use this rules file:")
-        print(f"   veritas-accounting process --input examples/journal_entry_2020_2024.xlsx --rules {output_file}")
+        print(f"   veritas-accounting process --input examples/journal_entry_sample.xlsx --rules {output_file}")
     except Exception as e:
         print(f"\n❌ Error: {e}")
         import traceback

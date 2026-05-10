@@ -165,7 +165,7 @@ if __name__ == '__main__':
         rules_df, output_file = convert_mapping_file(input_file)
         print(f"\n🎉 Success! Converted mapping rules saved to: {output_file}")
         print(f"\n💡 Now you can use:")
-        print(f"   veritas-accounting process --input examples/test_journal_new.xlsx --rules {output_file} --output ./output")
+        print(f"   veritas-accounting process --input examples/journal_entry_sample.xlsx --rules {output_file} --output ./output")
     except Exception as e:
         print(f"\n❌ Error: {e}")
         import traceback
